@@ -22,4 +22,5 @@ Um eine neue Plotvorlage zu erstellen legen Sie sich zunächst eine **Druckzusam
 
 Nähere Informationen zu der Bedienung des Composer Manager und Erstellung von Templates finden Sie in der `QGis Dokumentation <http://docs.qgis.org/1.8/de/docs/user_manual/print_composer/print_composer.html>`_
 
+Erstellte Plotvorlagen werden im Verzeichnis *C:\Users\BENUTZERNAME\.qgis2\composer_templates* abgelegt, so ist sichergestellt das Sie über das Instant Print Plugin gefunden und zur Auswahl stehen. 
 
