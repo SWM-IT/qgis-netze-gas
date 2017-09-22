@@ -74,14 +74,10 @@ class EditorModifierSql:
         self.dlg = EditorModifierSqlDialog()        
         
         self.dlg.lineEditProjectPath.clear()
-        self.dlg.lineEditProjectData.clear() 
-        
         self.dlg.OperationStatments.clear()       
         
         # Buttens
-        self.dlg.FileDialogButton.clicked.connect(self.select_input_file)        
-        #self.dlg.ConvertButton.clicked.connect(self.convert) 
-        self.dlg.ReadProjectDataButton.clicked.connect(self.readProjectDataFile) 
+        self.dlg.FileDialogButton.clicked.connect(self.select_input_file)  
         self.dlg.ConvertProjectDataButton.clicked.connect(self.startConvert) 
          
         # make DB Connection        
@@ -106,21 +102,25 @@ class EditorModifierSql:
         
         
     def startConvert(self):
-    
-        # my Layers from project
+        
+        # read project data file
+        self.readProjectDataFile()     
+   
         
         if self.dlg.lineEditProjectPath.text() == "":
             
-            self.show_message("ACHTUNG", "Erst eine Projektdatei auswählen")
+            self.show_message("ACHTUNG", "Erst eine Projektdatei auswï¿½hlen")
         
         else: 
                       
             conn = self.db_connection
             cur = conn.cursor()
+              
+            # new project Data Name and Path  
+            project_data_name = self.filename.split(".qgs")
+            new_project_data_name = project_data_name[0] + "_NEU.qgs" 
         
-            layers = self.iface.legendInterface().layers()  
-        
-            for layer in layers:
+            for layer in self.iface.legendInterface().layers():
             
                 #print ("NAME " + layer.name()) 
             
@@ -139,50 +139,38 @@ class EditorModifierSql:
                     editor_visibility = self.editor_visibility_layers[layername]
                     
                     # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten 
-                    self.convertProcessData(layer, editor_visibility) 
+                    self.convertProcessData(layer, editor_visibility, new_project_data_name) 
                 
                 #else:
                    
                     #print("keine Layer zum konvertieren gefunden")
             
             
-            reply = QMessageBox.question(self.iface.mainWindow(), 'ACHTUNG:', 'Es wird eine neue Projekdatei gespeichert !', QMessageBox.Yes, QMessageBox.No)
+            reply = QMessageBox.question(self.iface.mainWindow(), 'ACHTUNG:', 'Es wird eine neue Projekdatei angelegt !', QMessageBox.Yes, QMessageBox.No)
         
             if reply == QtGui.QMessageBox.Yes:
             
                 #self.writeProjectDataFile()
-                self.show_message("Speichern", "Neue Projektdatei wurde erstellt")            
+                self.show_message("Speichern", "Projektdatei unter " + new_project_data_name + " erstellt")            
             
             else:
             
                 print "Projekt wurde nicht gespeichert !" 
             
         # close db connection
-        #conn.close()         
-     
-        
-    def writeProjectDataFile(self):
-            
-        #proj.read(QFileInfo("source.qgs"))    
-        # project data
-       
-        proj = QgsProject.instance()
-        # save with new name          
-        proj.write(QFileInfo("ProjektNEU.qgs"))  
-             
-        print(proj.fileName) 
-        
+        #conn.close()  
           
         
     def readProjectDataFile(self):
         
         
-        filename = self.dlg.lineEditProjectPath.text()
+        filename = self.dlg.lineEditProjectPath.text()         
+        
          
         if filename == "":
              
-            self.show_message("ACHTUNG","keine Projektdatei ausgewählt")     
-           
+            self.show_message("ACHTUNG","keine Projektdatei ausgewÃ¤hlt")     
+            return false 
         
         else:
             
@@ -190,15 +178,15 @@ class EditorModifierSql:
             root = tree.getroot()
             
             self.root_XML = root 
-            self.tree = tree
-            
-            self.dlg.lineEditProjectData.setText("eingelesen")
+            self.tree = tree  
             
             print("Projektdatei eingelesen")            
         
     
-    def convertProcessData(self, layer, editor_visibility):  
+    
+    def convertProcessData(self, layer, editor_visibility, new_project_data_name):
         
+        # operation Text
         operation = []        
         
         project_layer_name = layer.name()        
@@ -230,15 +218,14 @@ class EditorModifierSql:
                 # split layernames behind point
                 layernames = layername_tag.text.split(".")
                 layername = layernames[0] 
-                
-                #### AUSAGBE MELDUNGSFENSTER                    
-                operation.append("Layer " + layername + " wird bearbeitet: ")                    
-                self.dlg.OperationStatments.addItems(operation)
-                #### AUSGABE                  
-                
+
                 
                 if not layername.startswith('swb') and not layername.startswith('G'):                   
                     
+                    #### AUSAGBE MELDUNGSFENSTER                    
+                    operation.append("Layer " + layername + " wird bearbeitet:")                    
+                    self.dlg.OperationStatments.addItems(operation)
+                    #### AUSGABE  
             
                     print("LAYERNAME !! " + layername)    
                     
@@ -282,6 +269,64 @@ class EditorModifierSql:
                             external_fieldname = visibilty[4]
                             field_type = visibilty[5]
                             enum_name = visibilty[6]
+                            
+                            #print ("ENUM NAME " + str(enum_name))
+                            
+                            
+                            # Datumsfelder setzen
+                            if field_type == "date": 
+                                
+                                edittypes_tag = a_maplayer.find('edittypes') 
+                                
+                                for edittype in edittypes_tag.iter('edittype'):
+                                
+                                    field_name = edittype.get('name')
+                                
+                                    if visibility_name == field_name:                                        
+                                        
+                                        # setze Feldformat DateTime
+                                        edittype.set('widgetv2type', "DateTime")
+                                        
+                                        widgetv2config_tag = edittype.find('widgetv2config') 
+                                        
+                                        widgetv2config_tag.set('calendar_popup', '1')
+                                        widgetv2config_tag.set('display_format', 'dd.MM.yyyy')
+                                        widgetv2config_tag.set('field_format', 'dd.MM.yyyy')
+                                        
+                            # Enumerator Werte setzen
+                            if enum_name != None:
+                                
+                                # hole mir die Daten aus der Datenbank
+                                cur.execute("""SELECT value, sequence_number from ga.gced_enum WHERE name='""" + enum_name + """' ORDER BY sequence_number""")
+                                rows = cur.fetchall()
+                                
+                                edittypes_tag = a_maplayer.find('edittypes') 
+                                
+                                for edittype in edittypes_tag.iter('edittype'):
+                                
+                                    field_name = edittype.get('name')
+                                
+                                    if visibility_name == field_name:                                        
+                                        
+                                        # setze Feldformat ValueMap
+                                        edittype.set('widgetv2type', "ValueMap")
+                                        
+                                        widgetv2config_tag = edittype.find('widgetv2config')  # lÃ¶schen und neu erstellen
+                                        edittype.remove(widgetv2config_tag)
+                                        
+                                        # wieder neu mit standartwerten einfÃ¼gen                                        
+                                        child = ET.SubElement(edittype, "widgetv2config",  fieldEditable="1", constraint="", labelOnTop="0", constraintDescription="", notNull="0")
+                                        
+                                        for row in rows:
+                                            
+                                            value= row[0] #.encode('utf-8', 'ignore').decode('utf-8')   
+                                            sequence_number = row[1] #.encode('utf-8', 'ignore').decode('utf-8')   
+                                            
+                                            ValueAttributes = {"key": str(sequence_number), "value": value}
+                                            #ValueAttributes = {"key": value, "value": str(sequence_number)}
+                                            ValueAttributes = {"key": value, "value": value}
+                                            ET.SubElement(child, "value", attrib=ValueAttributes)
+                             
                              
                             # get fieldIndexNumber from QGIS for field    
                             idx = layer.fieldNameIndex(layer_field_names[ visibility_name ].name())
@@ -307,9 +352,9 @@ class EditorModifierSql:
                             store_page_name = page_name                       
                             # MAKE TAB GENERATED FIELS                             
                                        
-                            edittypes_tag = a_maplayer.find('edittypes')  
+                            #edittypes_tag = a_maplayer.find('edittypes')  
                             
-                            # gehe über die Edittypes Attribute und änderen die Namen mit denen aus der DB
+                            # gehe ï¿½ber die Edittypes Attribute und ï¿½nderen die Namen mit denen aus der DB
                             ## Modifiy edittype TAGS
                             #for edittype in edittypes_tag.iter('edittype'):
                     
@@ -322,7 +367,7 @@ class EditorModifierSql:
                             ## Modifiy defaults TAGS     
                             #defaults_tag = a_maplayer.find('defaults') 
                             
-                            # gehe über die Defaults Attribute und änderen die Namen mit denen aus der DB
+                            # gehe ï¿½ber die Defaults Attribute und ï¿½nderen die Namen mit denen aus der DB
                             #for default in defaults_tag.iter('default'):
                     
                             #    field_name = default.get('field')
@@ -335,25 +380,24 @@ class EditorModifierSql:
                             ## set aliases Names for attributs      
                             aliases_tag = a_maplayer.find('aliases') 
                                     
-                            # gehe über die aliase Attribute und änderen die Namen mit denen aus der DB
+                            # gehe ï¿½ber die aliase Attribute und ï¿½nderen die Namen mit denen aus der DB
                             for alias in aliases_tag.iter('alias'):
                     
                                 field_name = alias.get('field')
                                 
                                 if visibility_name == field_name:
                                     
-                                    alias.set('name',  external_fieldname)
-                                    
+                                    alias.set('name',  external_fieldname)                                    
                             
                     #### AUSAGBE MELDUNGSFENSTER                    
                     operation.append(".......OK")                    
                     self.dlg.OperationStatments.addItems(operation)
-                    #### AUSGABE
-                    
+                    #### AUSGABE      
         
-        self.tree.write('C:/QGIS_Dev/Projekte/output.qgs') # pretty_print=True
-     
-       
+        
+        self.tree.write(new_project_data_name) # pretty_print=True
+        
+        
     
     def readLayers(self):
         
@@ -387,12 +431,10 @@ class EditorModifierSql:
     # open file dialog for project data
     def select_input_file(self):     
         
+        ProjectPath = QgsProject.instance().readPath("./")                           
+        self.filename = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", ProjectPath, "*.qgs")
         
-        path = "C:\QGIS_Dev\Projekte"                    #self.dlg
-        filename = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", path, "*.qgs")
-        
-        self.dlg.lineEditProjectPath.setText(filename)      
-        
+        self.dlg.lineEditProjectPath.setText(self.filename)  
          
     
     def make_db_connection(self):
