@@ -201,7 +201,7 @@ class EditorModifierSql:
         
         #a_maplayer = self.root_XML.findall(".//maplayer[layername='  " + project_layer_name + ']")
         # root.findall(".//maplayer/[layername='g_schutzmassnahme.flaeche']*")
-                   
+                           
         for a_maplayer in self.root_XML.getiterator('maplayer'):         
           
             # jeder Layer ist in einem maplayer Tag definiert
@@ -215,6 +215,7 @@ class EditorModifierSql:
             
             if layername_tag.text == project_layer_name:  
           
+                #print("TAG LAYERNAME IM MAPLAYER " + layername_tag.text)
                 # split layernames behind point
                 layernames = layername_tag.text.split(".")
                 layername = layernames[0] 
@@ -256,10 +257,14 @@ class EditorModifierSql:
                     store_page_name = "main_page"      
                     for visibilty in editor_visibility:   
                 
-                        visibility_name = visibilty[0]                          
+                        visibility_name = visibilty[0]    
+                        
+                        print("SUCHE NACH FELD IN LAYER " + visibility_name)                      
                                            
                         # schauen ob mein Feld aus in den Meta Daten der SMallworld DB steht
-                        if layer_field_names.has_key(visibility_name):                            
+                        if layer_field_names.has_key(visibility_name):    
+                            
+                            #print("FELD GEFUNDEN IN LYER FIELD NAMES " + visibility_name)                        
                           
                             # get index from attribute field                                
                             internal_fieldname = visibilty[0]
@@ -315,7 +320,7 @@ class EditorModifierSql:
                                         edittype.remove(widgetv2config_tag)
                                         
                                         # wieder neu mit standartwerten einfügen                                        
-                                        child = ET.SubElement(edittype, "widgetv2config",  fieldEditable="1", constraint="", labelOnTop="0", constraintDescription="", notNull="0")
+                                        child_edittpe = ET.SubElement(edittype, "widgetv2config",  fieldEditable="1", constraint="", labelOnTop="0", constraintDescription="", notNull="0")
                                         
                                         for row in rows:
                                             
@@ -325,7 +330,7 @@ class EditorModifierSql:
                                             ValueAttributes = {"key": str(sequence_number), "value": value}
                                             #ValueAttributes = {"key": value, "value": str(sequence_number)}
                                             ValueAttributes = {"key": value, "value": value}
-                                            ET.SubElement(child, "value", attrib=ValueAttributes)
+                                            ET.SubElement(child_edittpe, "value", attrib=ValueAttributes)
                              
                              
                             # get fieldIndexNumber from QGIS for field    
@@ -338,14 +343,21 @@ class EditorModifierSql:
                             
                             if page_name == "main_page":
                                 
-                                child = ET.SubElement(parent, "attributeEditorField", showLabel="1", attrib=FieldAttributes)
+                                ET.SubElement(parent, "attributeEditorField", showLabel="1", attrib=FieldAttributes)
                             
                             else:
                                 
+                                print("PAGE NAME IM ELSE " + page_name)
                                 if page_name != store_page_name: 
+                                    
+                                    print("Erstelle Unterseite " + external_page_name)
                                     
                                     ContainerAttributes = {"name": external_page_name}
                                     child = ET.SubElement(parent, "attributeEditorContainer", showLabel="1",  visibilityExpressionEnabled="0", visibilityExpression="", groupBox="0", columnCount="1", attrib=ContainerAttributes)
+                                
+                                print("TEST")
+                                print("Setze Feld auf Unterseite " + internal_fieldname + " INDEX NR: " + str(idx) + " STORE PAGE NAME " + store_page_name + " PAGE NAME " + page_name)
+                                print("CHILD " + str(child))
                                 
                                 ET.SubElement(child, "attributeEditorField", attrib=FieldAttributes, showLabel="1")
                             
