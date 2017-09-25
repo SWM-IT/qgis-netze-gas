@@ -1,0 +1,39 @@
+# This file contains metadata for your plugin. Since 
+# version 2.0 of QGIS this is the proper way to supply 
+# information about a plugin. The old method of 
+# embedding metadata in __init__.py will 
+# is no longer supported since version 2.0.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Topologic Geometry Edit
+qgisMinimumVersion=2.0
+description=This plugin adds functions to edit topological linked geometries in one step
+version=0.1
+author=H.Fischer/Mettenmeier GmbH
+email=holger.fischer@mettenmeier.de
+
+about=Experimental Plugin for editing topological linked geometries. The final result will use standard edit functions to trigger changes in topological connected features. The current goal is the 'update' function of point geometries. Further planned: - update line geometries - insert points for connect to lines - insert points for split lines - insert lines for connect to points
+
+tracker=not ready
+repository=not ready
+# End of mandatory metadata
+
+# Recommended items:
+
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=
+
+homepage=
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- CoordLister
+ TopologicGeometryEdit
                                  A QGIS plugin
- List Coordinates
+ This plugin adds functions to edit topological linked geometries in one step
                               -------------------
-        begin                : 2017-09-11
+        begin                : 2017-09-21
         git sha              : $Format:%H$
         copyright            : (C) 2017 by H.Fischer/Mettenmeier GmbH
         email                : holger.fischer@mettenmeier.de
@@ -22,17 +22,19 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL
 from PyQt4.QtGui import QAction, QIcon, QMessageBox
-from qgis.core import QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry 
+from qgis.core import QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
-from coord_lister_dialog import CoordListerDialog
-import os.path
+from topoGeomEdit_dialog import TopologicGeometryEditDialog
 # Import the topology connector class
 from TopologyConnector import TopologyConnector
+import os.path
+from qgis.utils import iface
+from PyQt4.Qt import QColor
 
 
-class CoordLister:
+class TopologicGeometryEdit:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
@@ -52,7 +54,7 @@ class CoordLister:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'CoordLister_{}.qm'.format(locale))
+            'TopologicGeometryEdit_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -64,10 +66,13 @@ class CoordLister:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&CoordLister')
+        self.menu = self.tr(u'&Topologic Geometry Edit')
         # TODO: We are going to let the user set this up in a future iteration
-        self.toolbar = self.iface.addToolBar(u'CoordLister')
-        self.toolbar.setObjectName(u'CoordLister')
+        self.toolbar = self.iface.addToolBar(u'TopologicGeometryEdit')
+        self.toolbar.setObjectName(u'TopologicGeometryEdit')
+        # declare slot variables
+        self.selectedLayer = None
+        self.selectedFeature = None
         
         # check if already a layer is selected on Plugin Load (probably only during testing) 
         currentLayer = self.iface.mapCanvas().currentLayer()
@@ -78,7 +83,7 @@ class CoordLister:
         
         # set db connector for topology tests
         self.topologyConnector = TopologyConnector()
-        
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -92,7 +97,7 @@ class CoordLister:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('CoordLister', message)
+        return QCoreApplication.translate('TopologicGeometryEdit', message)
 
 
     def add_action(
@@ -146,7 +151,7 @@ class CoordLister:
         """
 
         # Create the dialog (after translation) and keep reference
-        self.dlg = CoordListerDialog()
+        self.dlg = TopologicGeometryEditDialog()
 
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
@@ -163,7 +168,7 @@ class CoordLister:
             self.toolbar.addAction(action)
 
         if add_to_menu:
-            self.iface.addPluginToVectorMenu(
+            self.iface.addPluginToMenu(
                 self.menu,
                 action)
 
@@ -174,42 +179,25 @@ class CoordLister:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/CoordLister/icon.png'
+        icon_path = ':/plugins/TopologicGeometryEdit/icon.png'
+        
         self.add_action(
             icon_path,
-            text=self.tr(u'Coordinate Lister'),
-            callback=self.coordList,
+            text=self.tr(u'Highlight topology connection'),
+            callback=self.findTopology,
             parent=self.iface.mainWindow())
-        
+
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginVectorMenu(
-                self.tr(u'&CoordLister'),
+            self.iface.removePluginMenu(
+                self.tr(u'&Topologic Geometry Edit'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
 
 
-    def run(self):
-        """Run method that performs all the real work"""
-        # show the dialog
-        self.dlg.show()
-        # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
-
-    def coordList(self):
-        """List the coordinates of the selected geometry"""
-        selected = self.checkSelection()
-        if selected:
-            self.listAllCoordinates(selected)
-        
     def checkSelection(self):    
         
         toolname = "CoordinateList"
@@ -249,27 +237,6 @@ class CoordLister:
         
         return selected
         
-    def listAllCoordinates(self, selected):    
-        # toDo: loop over all selected geometries
-        aFeature = selected[0]
-        aGeometry = aFeature.geometry()
-        
-        # check different geometry types
-        aType = aGeometry.wkbType()
-        aCoordList = []
-        
-        if aType == QGis.WKBPoint:
-            aCoordList = [aGeometry.asPoint()]
-        if aType == QGis.WKBLineString:
-            aCoordList = aGeometry.asPolyline()
-        coordString = ""
-        for aCoord in aCoordList:
-            coordX = "{:10.3f}".format(aCoord.x())
-            coordY = "{:10.3f}".format(aCoord.y())
-            coordString = coordString + str(coordX) + " , " + str(coordY) + "\n"
-            
-        QMessageBox.information(None, toolname, "Coordinates of selected geometry:\n\n" + coordString)
-        
     def findTopology(self):
         '''
         find topological related geometries of selected geometry
@@ -278,6 +245,42 @@ class CoordLister:
         
         if selected:
             aFeature = selected[0]
+            #initialLayer = iface.mapCanvas().currentLayer()
+            conFeaturesList = self.connectedFeatures(aFeature)
+            if conFeaturesList:
+                # add connected Features to selection set and change colour to red
+                #iface.mapCanvas().setSelectionColor( QColor("red") )
+                # we check only house connections so far
+                drawLayer = None
+                for aLayer in iface.mapCanvas().layers():
+                    if aLayer.name() == 'anschlussltg_abschnitt':
+                        #drawLayer = aLayer
+                        #iface.setActiveLayer(aLayer)
+                        #iface.mapCanvas().setSelectionColor( QColor("red") )
+                        #iface.legendInterface().setCurrentLayer(aLayer)
+                        qFeaturesList = []
+                        for aSystemId in conFeaturesList:
+                            request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aSystemId))
+                            for aQsFeature in aLayer.getFeatures( request ):
+                                qFeaturesList.append(aQsFeature.id())
+                        aLayer.setSelectedFeatures(qFeaturesList)
+                        break
+                
+                #drawLayer.setSelectedFeatures(conFeaturesList)
+                #dBox = drawLayer.boundingBoxOfSelected()
+                #iface.mapCanvas().setExtent(dBox)
+                #iface.mapCanvas().refreshAllLayers()
+                iface.mapCanvas().refresh()
+                #iface.setActiveLayer(initialLayer)
+                #iface.mapCanvas().setSelectionColor( QColor("yellow") )
+                
+        return True
+                    
+    def connectedFeatures(self, aFeature):
+        '''
+        returns all Features topological connected to AFeature
+        '''
+        if aFeature:
             aGeometry = aFeature.geometry()
         
             # check different geometry types
@@ -288,29 +291,50 @@ class CoordLister:
                 if topoNodeId:
                     connectedEdgeIds = self.topologyConnector.all_edges_for_node(topoNodeId)
                     
-                    relatedLineIds = []
-                    for connectedEdgeId in connectedEdgeIds:
-                        # find related line object
-                        relatedLineId = self.topologyConnector.get_line_for_edgeid(connectedEdgeId)
-                        if relatedLineId:
-                            relatedLineIds.append(relatedLineId)
-                            
-                    # now we could return a list of line object ids.
-                    # We still need to find the layer/table name
-                    dummy = 0
+                    relatedLineIds = self.topologyConnector.get_lines_for_edgeids(connectedEdgeIds)
+                    
+                    return relatedLineIds
             
     def listen_layerChanged(self, layer):
         # listens to change of current layer
         #QObject.connect(layer, SIGNAL("geometryChanged(QgsFeatureId, const QgsGeometry &)"), self.listen_geometryChange) # does not work
-        self.selectedLayer = layer
-        if layer:
-            layer.geometryChanged.connect(self.listen_geometryChange)        
+        if layer == self.selectedLayer:
+            return
+        else:
+            # disconnect old listener
+            if self.selectedLayer:
+                self.selectedLayer.geometryChanged.disconnect(self.listen_geometryChange)
+            # in any case store new selected layer (can be None)
+            self.selectedLayer = layer
+            
+            if layer:
+                # connect to signal
+                layer.geometryChanged.connect(self.listen_geometryChange)
     
-    def listen_geometryChange(self, fid, geometry):
+    def listen_geometryChange(self, fid, cGeometry):
         # listens to geometry changes
         toolname = "Geometry Changed"
         
-        if fid:
-            idRequest = QgsFeatureRequest(fid)
-            self.selectedFeature = self.selectedLayer.getFeatures(idRequest)
-            QMessageBox.information(None, toolname, "Geometry was changed for " + str(fid))
+        if not fid:
+            return
+        
+        allSelectedFeatures = []
+        for aSelectedFeature in self.selectedLayer.getFeatures(QgsFeatureRequest(fid)):
+            allSelectedFeatures.append(aSelectedFeature)
+        
+        if allSelectedFeatures[0]:
+            self.selectedFeature = allSelectedFeatures[0]
+            #QMessageBox.information(None, toolname, "Geometry was changed for " + str(self.selectedFeature.id()))
+            aGeometry = self.selectedFeature.geometry()
+            
+    def run(self):
+        """Run method that performs all the real work"""
+        # show the dialog
+        self.dlg.show()
+        # Run the dialog event loop
+        result = self.dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass

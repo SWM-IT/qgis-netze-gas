@@ -6,6 +6,7 @@ Created on 15.09.2017
 import psycopg2
 from PyQt4.QtGui import QMessageBox
 from platform import node
+from __builtin__ import str
 
 class TopologyConnector():
     '''
@@ -124,11 +125,11 @@ class TopologyConnector():
         returns the point object related to the given node id
         '''
         
-    def get_line_for_edgeid(self, edgeId):
+    def get_lines_for_edgeids(self, edgeIds):
         '''
-        returns the line object related to the given edge id
+        returns the line objects related to the given edge ids
         '''
-        if edgeId:
+        if edgeIds:
             conn = self.db_connection(None, None, None, None)
             if conn:
                 lineId = None
@@ -136,13 +137,14 @@ class TopologyConnector():
                 reTableName = "gas_test.relation"
                 alTableName = "gas_test.anschlussltg_abschnitt"
                 #cur.execute("""SELECT e.topogeo_id from """ + reTableName + """ e WHERE e.element_id = """ + str(edgeId) + """ AND e.element_type = 2""")
-                cur.execute("""SELECT f.system_id from """ + reTableName + """ e, """ + alTableName + """ f WHERE e.element_id = """ + str(edgeId) + """ AND e.element_type = 2 AND id(f.g) = e.topogeo_id""")
+                cur.execute("""SELECT f.system_id from """ + reTableName + """ e, """ + alTableName + """ f WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = 2 AND id(f.g) = e.topogeo_id""")
                 rows = cur.fetchall()
                 
-                # should be only one
-                if rows[0]:
-                    lineId = rows[0][0]
+                # return all results
+                lineIds = []
+                for row in rows:
+                    lineIds.append(row[0])
                 
                 self.db_connection_close()
                 
-                return lineId
+                return lineIds
