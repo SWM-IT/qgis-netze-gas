@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/TopologicGeometryEdit" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
