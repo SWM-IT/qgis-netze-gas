@@ -1,9 +1,9 @@
 #/***************************************************************************
-# EditorModifierSql
+# EditorParser
 #
-# Editor modifier SQL
+# EditorParser
 #							 -------------------
-#		begin				: 2017-09-12
+#		begin				: 2017-09-14
 #		git sha				: $Format:%H$
 #		copyright			: (C) 2017 by Thomas Starke
 #		email				: thomas.starke@mettenmeier.de
@@ -38,15 +38,15 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	editor_modifier.py editor_modifier_dialog.py
+	editorparser.py editorparser_dialog.py
 
-PLUGINNAME = EditorModifierSql
+PLUGINNAME = EditorParser
 
 PY_FILES = \
 	__init__.py \
-	editor_modifier.py editor_modifier_dialog.py
+	editorparser.py editorparser_dialog.py
 
-UI_FILES = editor_modifier_dialog_base.ui
+UI_FILES = editorparser_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 

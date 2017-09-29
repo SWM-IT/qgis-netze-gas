@@ -1,7 +1,7 @@
 Plugin Builder Results
 
-Your plugin EditorModifierSql was created in:
-    C:\Users\starke\.qgis2\python\plugins\EditorModifierSql
+Your plugin EditorParser was created in:
+    C:\Users\starke\.qgis2\python\plugins\EditorParser
 
 Your QGIS plugin directory is located at:
     C:/Users/starke/.qgis2/python/plugins
@@ -17,11 +17,11 @@ What's Next:
 
   * Test the plugin by enabling it in the QGIS plugin manager
 
-  * Customize it by editing the implementation file: ``editor_modifier.py``
+  * Customize it by editing the implementation file: ``editorparser.py``
 
   * Create your own custom icon, replacing the default icon.png
 
-  * Modify your user interface by opening EditorModifierSql.ui in Qt Designer
+  * Modify your user interface by opening EditorParser.ui in Qt Designer
 
   * You can use the Makefile to compile your Ui and resource files when
     you make changes. This requires GNU make (gmake)

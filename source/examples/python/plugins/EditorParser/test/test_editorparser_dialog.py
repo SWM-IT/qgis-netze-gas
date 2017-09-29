@@ -9,25 +9,25 @@
 """
 
 __author__ = 'thomas.starke@mettenmeier.de'
-__date__ = '2017-09-12'
+__date__ = '2017-09-14'
 __copyright__ = 'Copyright 2017, Thomas Starke'
 
 import unittest
 
 from PyQt4.QtGui import QDialogButtonBox, QDialog
 
-from editor_modifier_dialog import EditorModifierSqlDialog
+from editorparser_dialog import EditorParserDialog
 
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
 
 
-class EditorModifierSqlDialogTest(unittest.TestCase):
+class EditorParserDialogTest(unittest.TestCase):
     """Test dialog works."""
 
     def setUp(self):
         """Runs before each test."""
-        self.dialog = EditorModifierSqlDialog(None)
+        self.dialog = EditorParserDialog(None)
 
     def tearDown(self):
         """Runs after each test."""
@@ -49,7 +49,7 @@ class EditorModifierSqlDialogTest(unittest.TestCase):
         self.assertEqual(result, QDialog.Rejected)
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(EditorModifierSqlDialogTest)
+    suite = unittest.makeSuite(EditorParserDialogTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 

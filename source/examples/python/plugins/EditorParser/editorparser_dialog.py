@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- EditorModifierSqlDialog
+ EditorParserDialog
                                  A QGIS plugin
- Editor modifier SQL
+ EditorParser
                              -------------------
-        begin                : 2017-09-12
+        begin                : 2017-09-14
         git sha              : $Format:%H$
         copyright            : (C) 2017 by Thomas Starke
         email                : thomas.starke@mettenmeier.de
@@ -26,13 +26,13 @@ import os
 from PyQt4 import QtGui, uic
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'editor_modifier_dialog_base.ui'))
+    os.path.dirname(__file__), 'editorparser_dialog_base.ui'))
 
 
-class EditorModifierSqlDialog(QtGui.QDialog, FORM_CLASS):
+class EditorParserDialog(QtGui.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
-        super(EditorModifierSqlDialog, self).__init__(parent)
+        super(EditorParserDialog, self).__init__(parent)
         # Set up the user interface from Designer.
         # After setupUI you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see

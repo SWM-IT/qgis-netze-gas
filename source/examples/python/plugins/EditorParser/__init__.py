@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- EditorModifierSql
+ EditorParser
                                  A QGIS plugin
- Editor modifier SQL
+ EditorParser
                              -------------------
-        begin                : 2017-09-12
+        begin                : 2017-09-14
         copyright            : (C) 2017 by Thomas Starke
         email                : thomas.starke@mettenmeier.de
         git sha              : $Format:%H$
@@ -25,11 +25,11 @@
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
-    """Load EditorModifierSql class from file EditorModifierSql.
+    """Load EditorParser class from file EditorParser.
 
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
     #
-    from .editor_modifier import EditorModifierSql
-    return EditorModifierSql(iface)
+    from .editorparser import EditorParser
+    return EditorParser(iface)

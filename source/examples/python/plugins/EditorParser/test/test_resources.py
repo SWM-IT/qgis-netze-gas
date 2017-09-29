@@ -9,7 +9,7 @@
 """
 
 __author__ = 'thomas.starke@mettenmeier.de'
-__date__ = '2017-09-12'
+__date__ = '2017-09-14'
 __copyright__ = 'Copyright 2017, Thomas Starke'
 
 import unittest
@@ -18,7 +18,7 @@ from PyQt4.QtGui import QIcon
 
 
 
-class EditorModifierSqlDialogTest(unittest.TestCase):
+class EditorParserDialogTest(unittest.TestCase):
     """Test rerources work."""
 
     def setUp(self):
@@ -31,12 +31,12 @@ class EditorModifierSqlDialogTest(unittest.TestCase):
 
     def test_icon_png(self):
         """Test we can click OK."""
-        path = ':/plugins/EditorModifierSql/icon.png'
+        path = ':/plugins/EditorParser/icon.png'
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(EditorModifierSqlResourcesTest)
+    suite = unittest.makeSuite(EditorParserResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 
