@@ -15,19 +15,18 @@ Layer anhand der ausgespielten Smallworld Sichtbarkeiten aus den gced Tabellen.
 Vorgehensweise
 --------------
 
-Es gibt 2 Vorgehensweisen. Einmal ist es möglich die bereits geöffnete Projketdatei zu konvertieren 
-oder eine beliebige Projektdatei auszuwählen und diese dann zu konvertieren. Dabei wird dann eine komplett neue Projektdatei
-erzeugt.
+Es gibt 2 Vorgehensweisen. Einmal ist es möglich die bereits geöffnete Projketdatei zu konvertieren, desweiteren kann 
+eine beliebige Projektdatei ausgewählt und konvertiert werden. Hierbei wird eine neue Projektdatei erzeugt.
 
-Wichtig ist zu wissen das die Änderungen nicht zurückgesetzt werden können. Konvertierungen werden immer direkt in der jeweiligen
-Projektdatei gespeichert und sind auch manuell änderbar.
 
 
 Um die geöffnete Projektdatei zu konvertieren starten Sie den Vorgang einfach über den Button 
-"Start Konvertierung über geöffnete Projektdatei" und folgen den Anweisungen.
+"Start Konvertierung über geöffnete Projektdatei" und folgen den Anweisungen. Danach muss das Projekt einmal händisch gespeichert
+werden, sodaß die Änderungen übernommen werden.
 
-Um eine beliebige Projekdatei zu konvertieren wäheln Sie zuerst eine Projektdatei über den Dialogbutton "..." aus,
+
+Um eine beliebige Projekdatei zu konvertieren wählen Sie zuerst eine Projektdatei über den Dialogbutton "..." aus,
 anschließend starten Sie den Vorgang über den Button "Start Konvertierung über eingelesene Projektdatei". Danach folgen
-Sie den Anweisungen. Es wird dann in dem gleichen Ordner wo die Projektdatei ausgewählt wurde eine neue Projektdatei mit
-mit der Endung NEU angelegt.
+Sie den Anweisungen. Es wird dann im gleichen Ordner wo die Projektdatei ausgewählt wurde eine neue Projektdatei mit
+mit der Endung "NEU" angelegt.
 
