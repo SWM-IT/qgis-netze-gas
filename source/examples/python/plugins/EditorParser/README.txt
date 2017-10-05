@@ -1,33 +1,33 @@
-Plugin Builder Results
+Plugin: EditorParser
 
-Your plugin EditorParser was created in:
-    C:\Users\starke\.qgis2\python\plugins\EditorParser
+Das Plugin in das Verzeichnis "C:\Users\BENUTZERNAME\.qgis2\python\plugins" ablegen. Im QGIS über 
+Erweiterungen => Erweiterungen verwalten und installieren das Plugin EditorParser suchen und installieren.
 
-Your QGIS plugin directory is located at:
-    C:/Users/starke/.qgis2/python/plugins
+Das Plugin ist danach unter Datenbank => EditorParser oder über das Icon in der Toolbar zu finden.    
 
-What's Next:
 
-  * Copy the entire directory containing your new plugin to the QGIS plugin
-    directory
+Funktion Plugin
+---------------
 
-  * Compile the resources file using pyrcc4
+Das Plugin wandelt die Layernamen um und erstellt die dazugehörigen Formularsichtbarkeiten für die einzelnen
+Layer anhand der ausgespielten Smallworld Sichtbarkeiten aus den gced Tabellen.
 
-  * Run the tests (``make test``)
+Vorgehensweise
+--------------
 
-  * Test the plugin by enabling it in the QGIS plugin manager
+Es gibt 2 Vorgehensweisen. Einmal ist es möglich die bereits geöffnete Projketdatei zu konvertieren 
+oder eine beliebige Projektdatei auszuwählen und diese dann zu konvertieren. Dabei wird dann eine komplett neue Projektdatei
+erzeugt.
 
-  * Customize it by editing the implementation file: ``editorparser.py``
+Wichtig ist zu wissen das die Änderungen nicht zurückgesetzt werden können. Konvertierungen werden immer direkt in der jeweiligen
+Projektdatei gespeichert und sind auch manuell änderbar.
 
-  * Create your own custom icon, replacing the default icon.png
 
-  * Modify your user interface by opening EditorParser.ui in Qt Designer
+Um die geöffnete Projektdatei zu konvertieren starten Sie den Vorgang einfach über den Button 
+"Start Konvertierung über geöffnete Projektdatei" und folgen den Anweisungen.
 
-  * You can use the Makefile to compile your Ui and resource files when
-    you make changes. This requires GNU make (gmake)
+Um eine beliebige Projekdatei zu konvertieren wäheln Sie zuerst eine Projektdatei über den Dialogbutton "..." aus,
+anschließend starten Sie den Vorgang über den Button "Start Konvertierung über eingelesene Projektdatei". Danach folgen
+Sie den Anweisungen. Es wird dann in dem gleichen Ordner wo die Projektdatei ausgewählt wurde eine neue Projektdatei mit
+mit der Endung NEU angelegt.
 
-For more information, see the PyQGIS Developer Cookbook at:
-http://www.qgis.org/pyqgis-cookbook/index.html
-
-(C) 2011-2014 GeoApt LLC - geoapt.com
-Git revision : $Format:%H$
