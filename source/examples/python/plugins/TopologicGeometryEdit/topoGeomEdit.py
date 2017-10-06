@@ -232,7 +232,7 @@ class TopologicGeometryEdit:
         # get the selected features
         selected = layer.selectedFeatures()
         if not selected:
-          QMessageBox.information(None, toolname, "Select the geometry you want to see the coordinate list from")
+          QMessageBox.information(None, toolname, "Select a house connection to highlight topological connected house connection line(s)")
           return
         
         return selected
@@ -246,23 +246,22 @@ class TopologicGeometryEdit:
         if selected:
             aFeature = selected[0]
             #initialLayer = iface.mapCanvas().currentLayer()
-            conFeaturesList = self.connectedFeatures(aFeature)
+            conFeaturesResult = self.connectedFeatures(aFeature)
+            conFeaturesList = conFeaturesResult['relatedLineIds']
             if conFeaturesList:
                 # add connected Features to selection set and change colour to red
                 #iface.mapCanvas().setSelectionColor( QColor("red") )
                 # we check only house connections so far
                 drawLayer = None
+                lineLayerName = 'anschlussltg_abschnitt'
                 for aLayer in iface.mapCanvas().layers():
                     if aLayer.name() == 'anschlussltg_abschnitt':
                         #drawLayer = aLayer
                         #iface.setActiveLayer(aLayer)
                         #iface.mapCanvas().setSelectionColor( QColor("red") )
+                        #iface.mapCanvas().refresh()
                         #iface.legendInterface().setCurrentLayer(aLayer)
-                        qFeaturesList = []
-                        for aSystemId in conFeaturesList:
-                            request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aSystemId))
-                            for aQsFeature in aLayer.getFeatures( request ):
-                                qFeaturesList.append(aQsFeature.id())
+                        qFeaturesList = self.findFeatures(aLayer, conFeaturesList)
                         aLayer.setSelectedFeatures(qFeaturesList)
                         break
                 
@@ -270,11 +269,22 @@ class TopologicGeometryEdit:
                 #dBox = drawLayer.boundingBoxOfSelected()
                 #iface.mapCanvas().setExtent(dBox)
                 #iface.mapCanvas().refreshAllLayers()
-                iface.mapCanvas().refresh()
                 #iface.setActiveLayer(initialLayer)
+                #iface.mapCanvas().setSelectionColor( QColor("red") )
+                iface.mapCanvas().refresh()
                 #iface.mapCanvas().setSelectionColor( QColor("yellow") )
-                
         return True
+    
+    def findFeatures(self, aLayer, systemIds):
+        '''
+        identifies aList of features on aLayer by a list of system_ids
+        '''
+        qFeaturesList = []
+        for aSystemId in systemIds:
+            request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aSystemId))
+            for aQsFeature in aLayer.getFeatures( request ):
+                qFeaturesList.append(aQsFeature.id())
+        return qFeaturesList
                     
     def connectedFeatures(self, aFeature):
         '''
@@ -289,11 +299,11 @@ class TopologicGeometryEdit:
                 topoNodeId = self.topologyConnector.get_nodeid_for_point(aFeature)
                 #
                 if topoNodeId:
+                    topoNodeWkt = self.topologyConnector.get_geometry_for_nodeid(topoNodeId)
                     connectedEdgeIds = self.topologyConnector.all_edges_for_node(topoNodeId)
-                    
                     relatedLineIds = self.topologyConnector.get_lines_for_edgeids(connectedEdgeIds)
                     
-                    return relatedLineIds
+                    return {'relatedLineIds': relatedLineIds, 'topoGeomWkt': topoNodeWkt}
             
     def listen_layerChanged(self, layer):
         # listens to change of current layer
@@ -325,7 +335,57 @@ class TopologicGeometryEdit:
         if allSelectedFeatures[0]:
             self.selectedFeature = allSelectedFeatures[0]
             #QMessageBox.information(None, toolname, "Geometry was changed for " + str(self.selectedFeature.id()))
-            aGeometry = self.selectedFeature.geometry()
+            #aGeometry = self.selectedFeature.geometry() # not the original geometry but the already changed one!
+            conFeaturesResult = self.connectedFeatures(self.selectedFeature)
+            conFeaturesList = conFeaturesResult['relatedLineIds']
+            oriGeometry = QgsGeometry.fromWkt(conFeaturesResult['topoGeomWkt'])
+            self.adjustCoordinates(oriGeometry, cGeometry, conFeaturesList)
+            
+    def adjustCoordinates(self, originalGeom, changedGeom, connectedFeaturesList):
+        '''
+        find changed coordinates in all features from connected features and update them to the new coordinates
+        '''
+        if originalGeom.wkbType() == QGis.WKBPoint:
+            # a point was moved, the connected features should be polygons (for now)
+            oPoint = originalGeom.asPoint()
+            cPoint = changedGeom.asPoint()
+            for aLayer in iface.mapCanvas().layers():
+                if aLayer.name() == 'anschlussltg_abschnitt':
+                    lineLayer = aLayer
+                    qFeaturesList = self.findFeatures(aLayer, connectedFeaturesList)
+                    break
+                
+            for aConFeatureId in qFeaturesList:
+                success = True
+                actLayer = iface.activeLayer()
+                if not lineLayer.isEditable():
+                    lineLayer.startEditing()
+                    #iface.setActiveLayer(lineLayer)
+                    #iface.actionToggleEditing().trigger() # switch layer to write mode
+                    #iface.setActiveLayer(actLayer)    
+                
+                lineLayer.beginEditCommand("Topological Geometry Edit")
+                for qFeature in lineLayer.getFeatures(QgsFeatureRequest(aConFeatureId)):
+                    aConPoly = qFeature.geometry().asPolyline()
+                    newPoly = []
+                    for aCoord in aConPoly:
+                        if aCoord.x() == oPoint.x() and aCoord.y() == oPoint.y():
+                            newPoly.append(cPoint)
+                        else:
+                            newPoly.append(aCoord)
+                    newGeom = QgsGeometry.fromPolyline(newPoly)
+                    #lineLayer.changeGeometry(qFeature.id(), newGeom)
+                    changeDone = lineLayer.changeGeometry(qFeature.id(), newGeom)
+                    success = success and changeDone
+                    
+                if success == False:
+                    lineLayer.destroyEditCommand()
+                    return
+                
+                lineLayer.endEditCommand()
+                
+            #lineLayer.beginEditCommand("edit")
+            #lineLayer.endEditCommand()
             
     def run(self):
         """Run method that performs all the real work"""

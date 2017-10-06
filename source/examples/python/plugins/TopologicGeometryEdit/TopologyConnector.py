@@ -148,3 +148,27 @@ class TopologyConnector():
                 self.db_connection_close()
                 
                 return lineIds
+            
+    def get_geometry_for_nodeid(self, nodeId):
+        '''
+        returns the geometry of a topo node with the given nodeId
+        '''
+        if nodeId:
+            conn = self.db_connection(None, None, None, None)
+            if conn:
+                nodeGeom = None
+                cur = conn.cursor()
+                nodeTableName = "gas_test.node"
+                cur.execute("""SELECT ST_AsText(e.geom) from """ + nodeTableName + """ e WHERE e.node_id = """ + str(nodeId))
+                rows = cur.fetchall()
+                
+                # should be only one
+                if rows[0]:
+                    nodeGeom = rows[0][0]
+                    
+                # close connection
+                self.db_connection_close()
+                
+                return nodeGeom
+            
+                
