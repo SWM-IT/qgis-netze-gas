@@ -65,14 +65,14 @@ class TopologyConnector():
                 # get edge entries from relations table
                 cur = conn.cursor()
                 tableName = "gas_test.edge_data"
-                cur.execute("""SELECT e.edge_id from """ + tableName + """ e WHERE e.start_node = """ + str(nodeId) + """ OR e.end_node = """ + str(nodeId))
+                cur.execute("""SELECT e.edge_id, e.geom from """ + tableName + """ e WHERE e.start_node = """ + str(nodeId) + """ OR e.end_node = """ + str(nodeId))
                 
                 rows = cur.fetchall()
                 
                 edgeIds = []
                 
                 for row in rows:
-                    edgeIds.append(row[0])
+                    edgeIds.append({'edgeId': row[0], 'edgeGeom': row[1]})
                     
                 # close connection
                 self.db_connection_close()
@@ -107,7 +107,7 @@ class TopologyConnector():
                 rows = cur.fetchall()
                 
                 # should be only one
-                if rows[0]:
+                if len(rows) > 0:
                     nodeId = rows[0][0]
                     
                 # close connection
@@ -136,14 +136,15 @@ class TopologyConnector():
                 cur = conn.cursor()
                 reTableName = "gas_test.relation"
                 alTableName = "gas_test.anschlussltg_abschnitt"
+                topoTableName = "topology.layer"
                 #cur.execute("""SELECT e.topogeo_id from """ + reTableName + """ e WHERE e.element_id = """ + str(edgeId) + """ AND e.element_type = 2""")
-                cur.execute("""SELECT f.system_id from """ + reTableName + """ e, """ + alTableName + """ f WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = 2 AND id(f.g) = e.topogeo_id""")
+                cur.execute("""SELECT f.system_id, e.element_id from """ + reTableName + """ e, """ + alTableName + """ f, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = h.feature_type AND h.layer_id = e.layer_id AND id(f.g) = e.topogeo_id""")
                 rows = cur.fetchall()
                 
                 # return all results
                 lineIds = []
                 for row in rows:
-                    lineIds.append(row[0])
+                    lineIds.append({'lineId': row[0], 'edgeId': row[1]})
                 
                 self.db_connection_close()
                 
@@ -163,7 +164,7 @@ class TopologyConnector():
                 rows = cur.fetchall()
                 
                 # should be only one
-                if rows[0]:
+                if len(rows) > 0:
                     nodeGeom = rows[0][0]
                     
                 # close connection
