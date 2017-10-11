@@ -253,9 +253,9 @@ class TopologicGeometryEdit:
                 #iface.mapCanvas().setSelectionColor( QColor("red") )
                 # we check only house connections so far
                 drawLayer = None
-                lineLayerName = 'anschlussltg_abschnitt'
+                lineLayerName = 'g_anschlussltg_abschnitt.d_leitung_in_betrieb'
                 for aLayer in iface.mapCanvas().layers():
-                    if aLayer.name() == 'anschlussltg_abschnitt':
+                    if aLayer.name() == lineLayerName:
                         #drawLayer = aLayer
                         #iface.setActiveLayer(aLayer)
                         #iface.mapCanvas().setSelectionColor( QColor("red") )
@@ -282,6 +282,7 @@ class TopologicGeometryEdit:
         '''
         qFeaturesList = []
         qEdgeFeaturesList = []
+        qNodeFeatureId = None
         systemIds = conFeaturesResult['relatedLineIds']
         
         for aSystemId in systemIds:
@@ -373,7 +374,7 @@ class TopologicGeometryEdit:
             cPoint = changedGeom.asPoint()
             #for aLayer in iface.mapCanvas().layers():
             for aLayer in iface.legendInterface().layers():
-                if aLayer.name() == 'anschlussltg_abschnitt':
+                if aLayer.name() == 'g_anschlussltg_abschnitt.d_leitung_in_betrieb':
                     lineLayer = aLayer
                 if aLayer.name() == 'edge':
                     edgeLayer = aLayer

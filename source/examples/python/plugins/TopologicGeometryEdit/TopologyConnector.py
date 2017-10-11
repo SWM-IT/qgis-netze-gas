@@ -64,7 +64,7 @@ class TopologyConnector():
             if conn:
                 # get edge entries from relations table
                 cur = conn.cursor()
-                tableName = "gas_test.edge_data"
+                tableName = "gas_topo.edge_data"
                 cur.execute("""SELECT e.edge_id, e.geom from """ + tableName + """ e WHERE e.start_node = """ + str(nodeId) + """ OR e.end_node = """ + str(nodeId))
                 
                 rows = cur.fetchall()
@@ -99,8 +99,8 @@ class TopologyConnector():
                 # get db entry for point object
                 # exemplary house connection table - should be retrieved from selected layer
                 cur = conn.cursor()
-                haTableName = "gas_test.hausanschluss"
-                reTableName = "gas_test.relation"
+                haTableName = "ga.g_hausanschluss"
+                reTableName = "gas_topo.relation"
                 
                 cur.execute("""SELECT f.element_id from """ + haTableName + """ e, """ + reTableName + """ f WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.element_type = 1""")
                 
@@ -134,8 +134,8 @@ class TopologyConnector():
             if conn:
                 lineId = None
                 cur = conn.cursor()
-                reTableName = "gas_test.relation"
-                alTableName = "gas_test.anschlussltg_abschnitt"
+                reTableName = "gas_topo.relation"
+                alTableName = "ga.g_anschlussltg_abschnitt"
                 topoTableName = "topology.layer"
                 #cur.execute("""SELECT e.topogeo_id from """ + reTableName + """ e WHERE e.element_id = """ + str(edgeId) + """ AND e.element_type = 2""")
                 cur.execute("""SELECT f.system_id, e.element_id from """ + reTableName + """ e, """ + alTableName + """ f, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = h.feature_type AND h.layer_id = e.layer_id AND id(f.g) = e.topogeo_id""")
@@ -159,7 +159,7 @@ class TopologyConnector():
             if conn:
                 nodeGeom = None
                 cur = conn.cursor()
-                nodeTableName = "gas_test.node"
+                nodeTableName = "gas_topo.node"
                 cur.execute("""SELECT ST_AsText(e.geom) from """ + nodeTableName + """ e WHERE e.node_id = """ + str(nodeId))
                 rows = cur.fetchall()
                 
