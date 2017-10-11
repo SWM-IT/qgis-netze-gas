@@ -142,12 +142,15 @@ class EditorParser:
                         
                     external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8') 
                 
+                
                     # get stored visibilitys
-                    editor_visibility = self.editor_visibility_layers[layername]
+                    if self.editor_visibility_layers.has_key(layername):
+                        
+                        editor_visibility = self.editor_visibility_layers[layername]
                     
-                    # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten 
-                    self.convertProcessData(layer, editor_visibility, new_project_data_name) 
-            
+                        # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten 
+                        self.convertProcessData(layer, editor_visibility, new_project_data_name)                         
+                
             
             reply = QMessageBox.question(self.iface.mainWindow(), 'ACHTUNG:', 'Es wird eine neue Projekdatei angelegt !', QMessageBox.Yes, QMessageBox.No)
         
@@ -263,8 +266,27 @@ class EditorParser:
                                
                     editorLayout_tag = a_maplayer.find('editorlayout')
                     editorLayout_tag.text = "tablayout"
-                        #print(editorLayout_tag)
-                                   
+                            
+                    
+                    # set shortname metadata for original layername                    
+                    # if shortname tag exists 
+                    shortName_tag = a_maplayer.find('shortname')
+                    
+                    if shortName_tag != None:
+                        shortName_tag.text = layername
+                    
+                    else:
+                        datasource_tag = a_maplayer.find('datasource') 
+                        datasource_index = a_maplayer.getchildren().index(datasource_tag)
+                       
+                        if datasource_index != None:
+                            
+                            datasource_index = datasource_index +1
+                            newElement =  ET.Element('shortname') # create new Element
+                            newElement.text = layername # set layername to new Element shortname
+                            a_maplayer.insert(datasource_index, newElement) # insert the new Element on new element index
+                    ######
+                                                   
                     element_index = a_maplayer.getchildren().index(editorLayout_tag) # get index number from child editorLayout
                     element_index = element_index +1
             
@@ -309,6 +331,7 @@ class EditorParser:
                                         widgetv2config_tag.set('calendar_popup', '1')
                                         widgetv2config_tag.set('display_format', 'dd.MM.yyyy')
                                         widgetv2config_tag.set('field_format', 'dd.MM.yyyy')
+                                        widgetv2config_tag.set('allow_null', '1') # erlaubt Leerwerte
                                         
                             # Enumerator Felder und Werte setzen
                             if enum_name != None:
@@ -410,7 +433,26 @@ class EditorParser:
         # set layername to QGIS
         layername_tag = map_layer.firstChildElement("layername")
         layername_tag.firstChild().setNodeValue(external_layer_name)          
-        #####          
+        #####    
+        
+        # funktioniert noch nicht !!!
+        # set shortname metadata for original layername
+        if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "keywordList":
+            
+            # shortname neu anlegen und positionieren
+            newShortNameForm = doc.createElement("shortname") 
+             
+            datasource_tag = map_layer.firstChildElement("datasource")
+            datasource_tag.setNodeValue(layername)
+            
+            map_layer.insertAfter(newShortNameForm, datasource_tag)
+        
+        elif map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
+            
+            shortname_tag = map_layer.firstChildElement("shortname")
+            shortname_tag.setNodeValue(layername)
+            
+        ####   
    
         newAttributeEditorForm = doc.createElement("attributeEditorForm")    
         
@@ -422,8 +464,10 @@ class EditorParser:
         layout.firstChild().setNodeValue("tablayout")
                     
         store_page_name = "main_page"     
-         
-        for visibilty in editor_visibility:   
+        
+        for visibilty in editor_visibility: 
+            
+            operation = []   
                 
             visibility_name = visibilty[0] 
             
@@ -467,7 +511,8 @@ class EditorParser:
                             newWidgetV2Config = doc.createElement("widgetv2config")                            
                             newWidgetV2Config.setAttribute("calendar_popup", "1")
                             newWidgetV2Config.setAttribute("display_format", "dd.MM.yyyy")
-                            newWidgetV2Config.setAttribute("field_format", "dd.MM.yyyy")                                                
+                            newWidgetV2Config.setAttribute("field_format", "dd.MM.yyyy") 
+                            widgetv2config_tag.set('allow_null', '1') # erlaubt Leerwerte                                               
                                                       
                             edittype_tag.appendChild(newWidgetV2Config)      
                             

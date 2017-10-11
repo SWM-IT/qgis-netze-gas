@@ -1,6 +1,6 @@
 '''
-Created on 15.09.2017
-@author: fischerh
+Created on 05.10.2017
+@author: Thomas Starke
 '''
 import psycopg2
 from PyQt4.QtGui import QMessageBox
