@@ -185,11 +185,12 @@ class EditorParser:
                         
                     external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8') 
                 
-                    # get stored visibilitys for layer
-                    editor_visibility = self.editor_visibility_layers[layername]   
-                                 
-                    # convert layer XML
-                    self.directConvertProcessData(layer, editor_visibility)
+                    if self.editor_visibility_layers.has_key(layername):
+                        
+                        editor_visibility = self.editor_visibility_layers[layername]
+                    
+                        # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten                         
+                        self.directConvertProcessData(layer, editor_visibility)
             
         
             self.show_message("Info", "Konvertierung abgeschlossen")
@@ -435,22 +436,34 @@ class EditorParser:
         layername_tag.firstChild().setNodeValue(external_layer_name)          
         #####    
         
+        # remove old attributeEditorForm Element if exists
+        if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
+            map_layer.removeChild(map_layer.firstChildElement("shortname").nextSibling())    
+        
+        datasource= map_layer.firstChildElement("datasource")
+        # shortname neu anlegen und positionieren
+        newShortNameForm = doc.createElement("shortname")         
+        newShortNameForm.setNodeValue(layername)
+        
+        map_layer.insertAfter(newShortNameForm, datasource)
+            
+        
         # funktioniert noch nicht !!!
         # set shortname metadata for original layername
-        if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "keywordList":
+        #if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "keywordList":
             
             # shortname neu anlegen und positionieren
-            newShortNameForm = doc.createElement("shortname") 
+            #newShortNameForm = doc.createElement("shortname") 
              
-            datasource_tag = map_layer.firstChildElement("datasource")
-            datasource_tag.setNodeValue(layername)
+            #datasource_tag = map_layer.firstChildElement("datasource")
+           # datasource_tag.setNodeValue(layername)
             
-            map_layer.insertAfter(newShortNameForm, datasource_tag)
+          #  map_layer.insertAfter(newShortNameForm, datasource_tag)
         
-        elif map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
+        #elif map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
             
-            shortname_tag = map_layer.firstChildElement("shortname")
-            shortname_tag.setNodeValue(layername)
+         #   shortname_tag = map_layer.firstChildElement("shortname")
+          #  shortname_tag.setNodeValue(layername)
             
         ####   
    
@@ -512,7 +525,7 @@ class EditorParser:
                             newWidgetV2Config.setAttribute("calendar_popup", "1")
                             newWidgetV2Config.setAttribute("display_format", "dd.MM.yyyy")
                             newWidgetV2Config.setAttribute("field_format", "dd.MM.yyyy") 
-                            widgetv2config_tag.set('allow_null', '1') # erlaubt Leerwerte                                               
+                            newWidgetV2Config.setAttribute('allow_null', '1') # erlaubt Leerwerte                                               
                                                       
                             edittype_tag.appendChild(newWidgetV2Config)      
                             
