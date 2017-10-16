@@ -133,15 +133,14 @@ class EditorParser:
             
                 #print ("NAME " + layer.name()) 
             
-                if not layer.name().startswith('swb') and not layer.name().startswith('G'):            
+                if not layer.name().startswith('swb') and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):            
             
                     layer_element = layer.name().split(".")
                     layername = layer_element[0]          
                     
                     external_layername = self.Connector.getExternalLayername(layername)
                         
-                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8') 
-                
+                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')                 
                 
                     # get stored visibilitys
                     if self.editor_visibility_layers.has_key(layername):
@@ -176,7 +175,7 @@ class EditorParser:
             # get all my project layers
             for layer in self.iface.legendInterface().layers():            
             
-                if not layer.name().startswith('swb') and not layer.name().startswith('G'):            
+                if not layer.name().startswith('swb') and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):           
             
                     layer_element = layer.name().split(".")
                     layername = layer_element[0] 
@@ -252,7 +251,9 @@ class EditorParser:
                 layernames = layername_tag.text.split(".")
                 layername = layernames[0] 
                 
-                if not layername.startswith('swb') and not layername.startswith('G'):  
+                #print("LAYERNAME " + layername)
+                
+                if not layername.startswith('swb') and not layername.startswith('G') and not layername.startswith('edge') and not layername.startswith('node'):  
                     
                     #### AUSAGBE MELDUNGSFENSTER                    
                     operation.append("Layer " + layername + " wird bearbeitet:")   
@@ -260,7 +261,7 @@ class EditorParser:
                     self.dlg.OperationStatments.addItems(operation)
                     #### AUSGABE    
                     
-                    external_layername = self.Connector.getExternalLayername(layername)                     
+                    external_layername = self.Connector.getExternalLayername(layername) 
                     
                     layername_tag = a_maplayer.find('layername') 
                     layername_tag.text = external_layername         

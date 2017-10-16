@@ -68,7 +68,7 @@ class DBConnection():
             
             # get external layer names from database
             cur.execute("""SELECT external from ga.gced_type WHERE name='""" + layername + """'""")
-            row = cur.fetchone()
+            row = cur.fetchone()    
             
             self.db_connection_close() 
         

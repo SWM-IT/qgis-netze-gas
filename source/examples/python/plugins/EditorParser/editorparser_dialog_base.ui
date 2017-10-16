@@ -6,34 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>410</width>
+    <width>382</width>
     <height>438</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>EditorParser</string>
   </property>
-  <widget class="QDialogButtonBox" name="button_box">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>240</y>
-     <width>341</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
   <widget class="QPushButton" name="ConvertProjectDataButton">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>350</y>
+     <x>20</x>
+     <y>340</y>
      <width>261</width>
      <height>23</height>
     </rect>
@@ -60,7 +44,7 @@
     <rect>
      <x>90</x>
      <y>70</y>
-     <width>231</width>
+     <width>191</width>
      <height>20</height>
     </rect>
    </property>
@@ -70,7 +54,7 @@
     <rect>
      <x>20</x>
      <y>140</y>
-     <width>371</width>
+     <width>331</width>
      <height>191</height>
     </rect>
    </property>
@@ -104,7 +88,7 @@
   <widget class="QPushButton" name="FileDialogButtonn">
    <property name="geometry">
     <rect>
-     <x>330</x>
+     <x>290</x>
      <y>70</y>
      <width>61</width>
      <height>23</height>
@@ -117,8 +101,8 @@
   <widget class="QPushButton" name="DirectConvertProjectDataButton">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>400</y>
+     <x>20</x>
+     <y>410</y>
      <width>261</width>
      <height>23</height>
     </rect>
@@ -129,38 +113,5 @@
   </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>button_box</sender>
-   <signal>accepted()</signal>
-   <receiver>EditorParserDialogBase</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_box</sender>
-   <signal>rejected()</signal>
-   <receiver>EditorParserDialogBase</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
