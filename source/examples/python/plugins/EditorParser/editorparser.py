@@ -111,6 +111,14 @@ class EditorParser:
         return QCoreApplication.translate('EditorParser', message)
     
     
+    
+    def not_changeable_fields(self):
+        
+        field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": ""}                  
+                
+        return field_names
+        
+    
     def startConvert(self):
         
         # clear statments dialog
@@ -133,14 +141,18 @@ class EditorParser:
             
                 #print ("NAME " + layer.name()) 
             
-                if not layer.name().startswith('swb') and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):            
+                if not layer.name().startswith('swb'): #and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):            
             
                     layer_element = layer.name().split(".")
                     layername = layer_element[0]          
                     
                     external_layername = self.Connector.getExternalLayername(layername)
                         
-                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')                 
+                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')    
+                    
+                    if external_layername == "":
+                        continue 
+                    ### get continue with next element             
                 
                     # get stored visibilitys
                     if self.editor_visibility_layers.has_key(layername):
@@ -148,7 +160,11 @@ class EditorParser:
                         editor_visibility = self.editor_visibility_layers[layername]
                     
                         # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten 
-                        self.convertProcessData(layer, editor_visibility, new_project_data_name)                         
+                        self.convertProcessData(layer, editor_visibility, new_project_data_name)      
+                    
+                    else:
+                        
+                        print "Sichtbarkeit zu " + layername + " nicht gefunden"                     
                 
             
             reply = QMessageBox.question(self.iface.mainWindow(), 'ACHTUNG:', 'Es wird eine neue Projekdatei angelegt !', QMessageBox.Yes, QMessageBox.No)
@@ -163,7 +179,7 @@ class EditorParser:
                 print "Projekt wurde nicht gespeichert !" 
             
         
-    def startDirectConvert(self): 
+    def startDirectConvert(self):         
         
         # clear statments dialog
         self.dlg.OperationStatments.clear() 
@@ -175,26 +191,28 @@ class EditorParser:
             # get all my project layers
             for layer in self.iface.legendInterface().layers():            
             
-                if not layer.name().startswith('swb') and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):           
+                if not layer.name().startswith('swb'): # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):           
             
                     layer_element = layer.name().split(".")
                     layername = layer_element[0] 
                     
                     external_layername = self.Connector.getExternalLayername(layername)
-                        
-                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8') 
-                
-                    if self.editor_visibility_layers.has_key(layername):
-                        
-                        editor_visibility = self.editor_visibility_layers[layername]
+                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')                    
                     
-                        # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten                         
-                        self.directConvertProcessData(layer, editor_visibility)
-            
-        
+                    if external_layername != "": 
+                
+                        if self.editor_visibility_layers.has_key(layername):
+                        
+                            editor_visibility = self.editor_visibility_layers[layername]
+                            
+                             # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten                         
+                            self.directConvertProcessData(layer, editor_visibility)
+                            
+                        else:
+                            print "Sichtbarkeit zu " + layername + " nicht gefunden"  
+                    
             self.show_message("Info", "Konvertierung abgeschlossen")
-               
-            
+                        
         else:
          
             self.show_message("Abbruch", "Abbruch durch Benutzer")   
@@ -253,7 +271,7 @@ class EditorParser:
                 
                 #print("LAYERNAME " + layername)
                 
-                if not layername.startswith('swb') and not layername.startswith('G') and not layername.startswith('edge') and not layername.startswith('node'):  
+                if not layername.startswith('swb'): #and not layername.startswith('G') and not layername.startswith('edge') and not layername.startswith('node'):  
                     
                     #### AUSAGBE MELDUNGSFENSTER                    
                     operation.append("Layer " + layername + " wird bearbeitet:")   
@@ -263,12 +281,15 @@ class EditorParser:
                     
                     external_layername = self.Connector.getExternalLayername(layername) 
                     
+                    if external_layername == "":
+                        continue 
+                    ## get continue with next value  
+                    
                     layername_tag = a_maplayer.find('layername') 
                     layername_tag.text = external_layername         
                                
                     editorLayout_tag = a_maplayer.find('editorlayout')
-                    editorLayout_tag.text = "tablayout"
-                            
+                    editorLayout_tag.text = "tablayout"                            
                     
                     # set shortname metadata for original layername                    
                     # if shortname tag exists 
@@ -314,8 +335,11 @@ class EditorParser:
                             field_type = visibilty[5]
                             enum_name = visibilty[6]
                             
+                            # not changeable fields
+                            not_changeable_fields =  {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": ""}  
+                                                        
                             # Datumsfelder setzen
-                            if field_type == "date": 
+                            if field_type == "date" or not_changeable_fields.has_key(visibility_name): 
                                 
                                 edittypes_tag = a_maplayer.find('edittypes') 
                                 
@@ -323,17 +347,22 @@ class EditorParser:
                                 
                                     field_name = edittype.get('name')
                                 
-                                    if visibility_name == field_name:                                        
+                                    if visibility_name == field_name: 
                                         
-                                        # setze Feldformat DateTime
-                                        edittype.set('widgetv2type', "DateTime")
+                                        widgetv2config_tag = edittype.find('widgetv2config')                                        
                                         
-                                        widgetv2config_tag = edittype.find('widgetv2config') 
+                                        if field_type == "date":
+                                            # setze Feldformat DateTime
+                                            edittype.set('widgetv2type', "DateTime")
+                                            widgetv2config_tag.set('calendar_popup', '1')
+                                            widgetv2config_tag.set('display_format', 'dd.MM.yyyy')
+                                            widgetv2config_tag.set('field_format', 'dd.MM.yyyy')
+                                            widgetv2config_tag.set('allow_null', '1') # erlaubt Leerwerte
                                         
-                                        widgetv2config_tag.set('calendar_popup', '1')
-                                        widgetv2config_tag.set('display_format', 'dd.MM.yyyy')
-                                        widgetv2config_tag.set('field_format', 'dd.MM.yyyy')
-                                        widgetv2config_tag.set('allow_null', '1') # erlaubt Leerwerte
+                                        if not_changeable_fields.has_key(visibility_name):
+                                        
+                                            widgetv2config_tag.set('fieldEditable', '0') # nicht änderbar
+                                        
                                         
                             # Enumerator Felder und Werte setzen
                             if enum_name != None:
@@ -500,9 +529,12 @@ class EditorParser:
                 #print( visibility_values)
                 #print("AUSGABE " + visibility_values[ external_fieldname ] )                       
                 # get fieldIndexNumber from QGIS field    
-                idx = layer.fieldNameIndex(layer_field_names[ visibility_name ].name())                 
+                idx = layer.fieldNameIndex(layer_field_names[ visibility_name ].name())
                 
-                if field_type == "date": 
+                # not changeable fields
+                not_changeable_fields =  {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": ""}  
+                                 
+                if field_type == "date" or not_changeable_fields.has_key(visibility_name): 
                     
                     edittypes_tag = map_layer.firstChildElement("edittypes")              
                     # get childs editytype from edittypes Tag
@@ -513,21 +545,29 @@ class EditorParser:
                         edittype_tag = edittypes_nodes.at(i).toElement()
                         name_value = edittype_tag.attribute("name") #get value from attr name    
                                         
-                        if visibility_name == name_value:                             
-                               
-                            # set new value to attribute widgetv2type   
-                            edittype_tag.setAttribute("widgetv2type","DateTime") 
+                        if visibility_name == name_value:   
                             
                             # delete child widgetv2config from edittype tag 
                             edittype_tag.removeChild(edittypes_nodes.at(i).toElement().firstChildElement("widgetv2config"))  
-                            
+                             
                             # make a new children widgetv2config Tag for parent edittype
-                            newWidgetV2Config = doc.createElement("widgetv2config")                            
-                            newWidgetV2Config.setAttribute("calendar_popup", "1")
-                            newWidgetV2Config.setAttribute("display_format", "dd.MM.yyyy")
-                            newWidgetV2Config.setAttribute("field_format", "dd.MM.yyyy") 
-                            newWidgetV2Config.setAttribute('allow_null', '1') # erlaubt Leerwerte                                               
+                            newWidgetV2Config = doc.createElement("widgetv2config")                           
+                             
+                            if field_type == "date":   
+                                # set new value to attribute widgetv2type   
+                                edittype_tag.setAttribute("widgetv2type","DateTime") 
+                                                         
+                                newWidgetV2Config.setAttribute("calendar_popup", "1")
+                                newWidgetV2Config.setAttribute("display_format", "dd.MM.yyyy")
+                                newWidgetV2Config.setAttribute("field_format", "dd.MM.yyyy") 
+                                newWidgetV2Config.setAttribute('allow_null', '1') # erlaubt Leerwerte    
+                            
+                                #if visibility_name =="geaendert_am" or visibility_name =="erfasst_am":
+                            if not_changeable_fields.has_key(visibility_name):                                
+                                                               
+                                newWidgetV2Config.setAttribute("fieldEditable", "0") # Feld nicht änderbar                                                                          
                                                       
+                            
                             edittype_tag.appendChild(newWidgetV2Config)      
                             
                 # Enumerator Felder und Werte setzen
