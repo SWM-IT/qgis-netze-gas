@@ -1,0 +1,160 @@
+{
+   "AutoFields": [
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_absperrarmatur\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 213
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_abzweig.d_position_in_betrieb\" (d_position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 214
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_anlage_station.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 215
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_anschlussltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
+         "order": 216
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_hauptltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
+         "order": 217
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_hausanschluss.position_hausanschluss_in_betri\" (position_hausanschluss_in_betri) sql=aktueller_status = 'in Betrieb'", 
+         "order": 218
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_kondensatsammelstelle.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 219
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsabschluss.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 220
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsoeffnung.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 221
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_regelstation.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 222
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schacht.begrenzung_in_betrieb\" (begrenzung_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 223
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' user='nis_readonly' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schutzmassnahme.flaeche\" (flaeche) sql=", 
+         "order": 224
+      }, 
+      {
+         "expression": "now()", 
+         "field": "geaendert_am", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_versorgungsltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
+         "order": 225
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_absperrarmatur\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 226
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_abzweig.d_position_in_betrieb\" (d_position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 227
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_anlage_station.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 228
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_anschlussltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
+         "order": 229
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_hauptltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
+         "order": 230
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_hausanschluss.position_hausanschluss_in_betri\" (position_hausanschluss_in_betri) sql=aktueller_status = 'in Betrieb'", 
+         "order": 231
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_kondensatsammelstelle.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 232
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsabschluss.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 233
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsoeffnung.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 234
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_regelstation.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 235
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schacht.begrenzung_in_betrieb\" (begrenzung_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
+         "order": 236
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' user='nis_readonly' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schutzmassnahme.flaeche\" (flaeche) sql=", 
+         "order": 237
+      }, 
+      {
+         "expression": "@user_full_name", 
+         "field": "geaendert_von", 
+         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_versorgungsltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
+         "order": 238
+      }
+   ]
+}
