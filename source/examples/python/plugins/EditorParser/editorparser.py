@@ -114,7 +114,7 @@ class EditorParser:
     
     def not_changeable_fields(self):
         
-        field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": ""}                  
+        field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "", "system_id": ""}                  
                 
         return field_names
         
@@ -147,12 +147,12 @@ class EditorParser:
                     layername = layer_element[0]          
                     
                     external_layername = self.Connector.getExternalLayername(layername)
-                        
-                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')    
                     
                     if external_layername == "":
                         continue 
-                    ### get continue with next element             
+                    ### get continue with next element  
+                    
+                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')              
                 
                     # get stored visibilitys
                     if self.editor_visibility_layers.has_key(layername):
@@ -196,10 +196,11 @@ class EditorParser:
                     layer_element = layer.name().split(".")
                     layername = layer_element[0] 
                     
-                    external_layername = self.Connector.getExternalLayername(layername)
-                    external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')                    
+                    external_layername = self.Connector.getExternalLayername(layername)                                      
                     
                     if external_layername != "": 
+                        
+                        external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')  
                 
                         if self.editor_visibility_layers.has_key(layername):
                         
@@ -532,7 +533,7 @@ class EditorParser:
                 idx = layer.fieldNameIndex(layer_field_names[ visibility_name ].name())
                 
                 # not changeable fields
-                not_changeable_fields =  {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": ""}  
+                not_changeable_fields =  {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "", "system_id": ""}  
                                  
                 if field_type == "date" or not_changeable_fields.has_key(visibility_name): 
                     
