@@ -71,8 +71,11 @@ class DBConnection():
             row = cur.fetchone() 
             
             self.db_connection_close() 
+                                   
+            if row == None:
+                return ""
             
-            if len(row) == 0:
+            elif len(row) == 0:
                 return ""
             else:    
                 return row[0]
