@@ -75,7 +75,7 @@ class TopologyConnector():
                     edgeIds.append({'edgeId': row[0], 'edgeGeom': row[1]})
                     
                 # close connection
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return edgeIds
             
@@ -111,7 +111,7 @@ class TopologyConnector():
                     nodeId = rows[0][0]
                     
                 # close connection
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return nodeId
         
@@ -138,7 +138,7 @@ class TopologyConnector():
                 alTableName = "ga.g_anschlussltg_abschnitt"
                 topoTableName = "topology.layer"
                 #cur.execute("""SELECT e.topogeo_id from """ + reTableName + """ e WHERE e.element_id = """ + str(edgeId) + """ AND e.element_type = 2""")
-                cur.execute("""SELECT f.system_id, e.element_id from """ + reTableName + """ e, """ + alTableName + """ f, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = h.feature_type AND h.layer_id = e.layer_id AND id(f.g) = e.topogeo_id""")
+                cur.execute("""SELECT f.system_id, e.element_id from """ + reTableName + """ e, """ + alTableName + """ f, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = h.feature_type AND h.layer_id = e.layer_id AND id(f.g) = e.topogeo_id AND h.schema_name = 'ga'""")
                 rows = cur.fetchall()
                 
                 # return all results
@@ -146,7 +146,7 @@ class TopologyConnector():
                 for row in rows:
                     lineIds.append({'lineId': row[0], 'edgeId': row[1]})
                 
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return lineIds
             
@@ -168,7 +168,7 @@ class TopologyConnector():
                     nodeGeom = rows[0][0]
                     
                 # close connection
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return nodeGeom
             
