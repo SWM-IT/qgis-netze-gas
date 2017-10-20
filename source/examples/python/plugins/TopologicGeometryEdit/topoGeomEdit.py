@@ -363,11 +363,13 @@ class TopologicGeometryEdit:
         # disconnect old listener
         if self.selectedLayer:
             self.selectedLayer.geometryChanged.disconnect(self.listen_geometryChange)
+            self.selectedLayer.layerModified.disconnect(self.listen_layerModified)
             self.selectedLayer.beforeRollBack.disconnect(self.listen_beforeRollBack)
         
         if layer and layer.shortName():
             # connect to signal
             layer.geometryChanged.connect(self.listen_geometryChange)
+            layer.layerModified.connect(self.listen_layerModified)
             layer.beforeRollBack.connect(self.listen_beforeRollBack)
             
         # in any case store new selected layer (can be None)
@@ -383,7 +385,6 @@ class TopologicGeometryEdit:
         if self.rollBackStarted == True:
             # the geometry changes are beeing rolled back so do not adjust topology layers
             # NOTE: We always use 'Rollback all Layers' for this topology model
-            self.rollBackStarted = False
             return
         
         # save start time
@@ -405,6 +406,13 @@ class TopologicGeometryEdit:
             self.adjustCoordinates(cGeometry, conFeaturesResult)
             
         #self.showTimeMessage('listen_geometryChange', time.time() - start)
+    
+    def listen_layerModified(self):
+        '''
+        listens do modifications done to the layer
+        '''
+        if self.selectedLayer.isModified() == False and self.rollBackStarted == True:
+            self.rollBackStarted = False
     
     def listen_beforeRollBack(self):
         '''
