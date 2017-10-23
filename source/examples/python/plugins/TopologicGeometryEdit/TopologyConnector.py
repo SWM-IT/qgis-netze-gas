@@ -54,6 +54,12 @@ class TopologyConnector():
             self.connection.close()
             self.connection = None
     
+    def setLayerInfo(self, aLayerDbInfo):
+        '''
+        store DB information of current selected Layer
+        '''
+        self.layerDbInfo = aLayerDbInfo
+    
     def all_edges_for_node(self, nodeId):
         '''
         returns all connected edges to a node
@@ -91,7 +97,7 @@ class TopologyConnector():
         returns the id of the topology node related to the given point object
         '''
         aPointId = aPointObject.attribute("system_id")
-        if aPointId:
+        if self.layerDbInfo and aPointId:
             # get db connection
             conn = self.db_connection(None, None, None, None)
             if conn:
@@ -99,7 +105,8 @@ class TopologyConnector():
                 # get db entry for point object
                 # exemplary house connection table - should be retrieved from selected layer
                 cur = conn.cursor()
-                haTableName = "ga.g_hausanschluss"
+                #haTableName = self.layerDbInfo.getFullTableName() # "ga.g_hausanschluss"
+                haTableName = "ga." + self.layerDbInfo.getTable()
                 reTableName = "gas_topo.relation"
                 
                 cur.execute("""SELECT f.element_id from """ + haTableName + """ e, """ + reTableName + """ f WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.element_type = 1""")
