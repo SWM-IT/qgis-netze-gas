@@ -257,20 +257,20 @@ class TopologicGeometryEdit:
             if conFeaturesList:
                 # add connected Features to selection set and change colour to red
                 #iface.mapCanvas().setSelectionColor( QColor("red") )
-                # we check only house connections so far
-                drawLayer = None
-                lineLayerName = 'g_anschlussltg_abschnitt'
-                for aLayer in iface.mapCanvas().layers():
-                    if aLayer.shortName() == lineLayerName:
-                        #drawLayer = aLayer
-                        #iface.setActiveLayer(aLayer)
-                        #iface.mapCanvas().setSelectionColor( QColor("red") )
-                        #iface.mapCanvas().refresh()
-                        #iface.legendInterface().setCurrentLayer(aLayer)
-                        qFeaturesData = self.findFeatures(aLayer, None, None, conFeaturesResult)
-                        qFeaturesList = qFeaturesData['lineFeaturesList']
-                        aLayer.setSelectedFeatures(qFeaturesList)
-                        break
+                for aTopoLine in conFeaturesList:
+                    drawLayer = None
+                    lineLayerName = aTopoLine.getTableName() #'g_anschlussltg_abschnitt'
+                    for aLayer in iface.mapCanvas().layers():
+                        if aLayer.shortName() == lineLayerName:
+                            #drawLayer = aLayer
+                            #iface.setActiveLayer(aLayer)
+                            #iface.mapCanvas().setSelectionColor( QColor("red") )
+                            #iface.mapCanvas().refresh()
+                            #iface.legendInterface().setCurrentLayer(aLayer)
+                            qFeaturesData = self.findFeatures(aLayer, None, None, conFeaturesResult)
+                            qFeaturesList = qFeaturesData['lineFeaturesList']
+                            aLayer.setSelectedFeatures(qFeaturesList)
+                            break
                 
                 #drawLayer.setSelectedFeatures(conFeaturesList)
                 #dBox = drawLayer.boundingBoxOfSelected()
@@ -292,16 +292,16 @@ class TopologicGeometryEdit:
         qFeaturesList = []
         qEdgeFeaturesList = []
         qNodeFeatureId = None
-        systemIds = conFeaturesResult['relatedLineIds']
+        topoLines = conFeaturesResult['relatedLineIds']
         
-        for aSystemId in systemIds:
+        for aTopoLine in topoLines:
             if aLayer:
-                request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aSystemId['lineId']))
+                request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aTopoLine.getSystemId()))
                 request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], aLayer.fields())
                 for aQsFeature in aLayer.getFeatures( request ):
                     qFeaturesList.append(aQsFeature.id())
             if aEdgeLayer:
-                request = QgsFeatureRequest().setFilterExpression(u'"edge_id" = ' + str(aSystemId['edgeId']))
+                request = QgsFeatureRequest().setFilterExpression(u'"edge_id" = ' + str(aTopoLine.getEdgeId()))
                 request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], aEdgeLayer.fields())
                 for aQsEdgeFeature in aEdgeLayer.getFeatures( request ):
                     qEdgeFeaturesList.append(aQsEdgeFeature.id())

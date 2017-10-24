@@ -10,13 +10,15 @@ import re
 
 class LayerDbInfo:
     def __init__(self, layerInfo):
-        if layerInfo[:7] == 'service':
+        if layerInfo[:6] == 'dbname':
             layerInfo = layerInfo.replace('\'','"')
             vals = dict(re.findall('(\S+)="?(.*?)"? ',layerInfo))
-            self.service = str(vals['service'])
+            self.dbName = str(vals['dbname'])
+            self.host = str(vals['host'])
+            self.port = int(vals['port'])
+            self.user = str(vals['user'])
+            self.password = str(vals['password'])
             self.srid = int(vals['srid'])
-            self.key = str(vals['key'])
-            self.sql = str(vals['sql'])
             self.sslmode = str(vals['sslmode'])
             self.type = str(vals['type'])
             
@@ -27,17 +29,23 @@ class LayerDbInfo:
         else:
             return
 
-    def getService(self):
-        return self.service
-
+    def getDbName(self):
+        return self.dbName
+    
+    def getHost(self):
+        return self.host
+    
+    def getPort(self):
+        return self.port
+    
+    def getUser(self):
+        return self.user
+    
+    def getPassword(self):
+        return self.password
+    
     def getSRID(self):
         return self.srid
-
-    def getKey(self):
-        return self.key
-
-    def getSQL(self):
-        return self.sql
 
     def getSSLmode(self):
         return self.sslmode
