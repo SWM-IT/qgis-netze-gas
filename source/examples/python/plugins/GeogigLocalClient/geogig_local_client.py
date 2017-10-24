@@ -139,7 +139,8 @@ class GeogigLocalClient:
         self.dock = GeogigLocalClientDialog()
         self.iface.addDockWidget( Qt.RightDockWidgetArea, self.dock )
 
-        icon = QIcon(icon_path)
+        icon = QIcon(os.path.dirname(__file__) + "/ui/resources/geogig_local_24.png")
+        
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
@@ -164,7 +165,7 @@ class GeogigLocalClient:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
+        
         icon_path = ':/plugins/GeogigLocalClient/icon.png'
         self.add_action(
             icon_path,

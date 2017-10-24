@@ -37,6 +37,9 @@ from qgis.core import QgsMessageLog
 from qgis.gui import QgsMessageBar
 from qgis.PyQt.QtWidgets import QMessageBox
 
+#from qgis.PyQt.QtGui import QIcon, QMessageBox, QPixmap
+from qgis.PyQt.QtGui import QIcon
+
 from geogig import config
 from geogig.geogigwebapi import repository
 from geogig.geogigwebapi.repository import Repository
@@ -48,6 +51,11 @@ from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeIte
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geogig_local_client_dialog_base.ui'))
+
+pluginPath = os.path.dirname(__file__)
+
+def icon(fileName):
+    return QIcon(os.path.join(pluginPath, "ui", "resources", fileName))
 
 
 #class GeogigLocalClientDialog(QtGui.QDialog, FORM_CLASS):
@@ -63,11 +71,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
-        
-        # self.currentRepo = None
-        # self.currentBranch = None
-        
+                
         self.setupUi(self)
+        self.tbSync.setIcon(icon("sync_16.png"))
+        self.tbPull.setIcon(icon("pull_16.png"))
+        self.tbPush.setIcon(icon("push_16.png"))
         self.cbbServers.currentIndexChanged.connect(self.fillReposCombo)
         self.cbbRepos.currentIndexChanged.connect(self.fillBranchesList)
         self.tbSync.clicked.connect(self.syncSelectedBranch)
@@ -351,5 +359,4 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             return False
         else:
             return True
-        
         
