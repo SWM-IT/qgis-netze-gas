@@ -3,158 +3,158 @@
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_absperrarmatur\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 213
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='nummer,bauart' srid=31468 type=Point table=\"ga\".\"g_absperrarmatur\" (position_in_betrieb) sql=", 
+         "order": 265
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_abzweig.d_position_in_betrieb\" (d_position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 214
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Point table=\"ga\".\"g_abzweig\" (d_position_in_betrieb) sql=", 
+         "order": 266
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_anlage_station.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 215
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_anlage_station\" (flaeche_in_betrieb) sql=", 
+         "order": 267
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_anschlussltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
-         "order": 216
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=LineString table=\"ga\".\"g_anschlussltg_abschnitt\" (d_leitung_in_betrieb) sql=", 
+         "order": 268
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_hauptltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
-         "order": 217
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_regelstation\" (flaeche_in_betrieb) sql=", 
+         "order": 269
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_hausanschluss.position_hausanschluss_in_betri\" (position_hausanschluss_in_betri) sql=aktueller_status = 'in Betrieb'", 
-         "order": 218
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=LineString table=\"ga\".\"g_hauptltg_abschnitt\" (d_leitung_in_betrieb) sql=", 
+         "order": 270
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_kondensatsammelstelle.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 219
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Point table=\"ga\".\"g_hausanschluss\" (position_hausanschluss_in_betri) sql=", 
+         "order": 271
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsabschluss.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 220
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='nummer,typ' srid=31468 type=Point table=\"ga\".\"g_kondensatsammelstelle\" (position_in_betrieb) sql=", 
+         "order": 272
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsoeffnung.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 221
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Point table=\"ga\".\"g_leitungsabschluss\" (position_in_betrieb) sql=", 
+         "order": 273
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_regelstation.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 222
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='nummer,typ' srid=31468 type=Point table=\"ga\".\"g_leitungsoeffnung\" (position_in_betrieb) sql=", 
+         "order": 274
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schacht.begrenzung_in_betrieb\" (begrenzung_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 223
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_schacht\" (begrenzung_in_betrieb) sql=", 
+         "order": 275
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' user='nis_readonly' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schutzmassnahme.flaeche\" (flaeche) sql=", 
-         "order": 224
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_schutzmassnahme\" (flaeche) sql=", 
+         "order": 276
       }, 
       {
          "expression": "now()", 
          "field": "geaendert_am", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_versorgungsltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
-         "order": 225
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=LineString table=\"ga\".\"g_versorgungsltg_abschnitt\" (d_leitung_in_betrieb) sql=", 
+         "order": 277
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_absperrarmatur\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 226
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='nummer,bauart' srid=31468 type=Point table=\"ga\".\"g_absperrarmatur\" (position_in_betrieb) sql=", 
+         "order": 278
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_abzweig.d_position_in_betrieb\" (d_position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 227
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Point table=\"ga\".\"g_abzweig\" (d_position_in_betrieb) sql=", 
+         "order": 279
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_anlage_station.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 228
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_anlage_station\" (flaeche_in_betrieb) sql=", 
+         "order": 280
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_anschlussltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
-         "order": 229
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=LineString table=\"ga\".\"g_anschlussltg_abschnitt\" (d_leitung_in_betrieb) sql=", 
+         "order": 281
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_hauptltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
-         "order": 230
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_regelstation\" (flaeche_in_betrieb) sql=", 
+         "order": 282
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_hausanschluss.position_hausanschluss_in_betri\" (position_hausanschluss_in_betri) sql=aktueller_status = 'in Betrieb'", 
-         "order": 231
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=LineString table=\"ga\".\"g_hauptltg_abschnitt\" (d_leitung_in_betrieb) sql=", 
+         "order": 283
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_kondensatsammelstelle.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 232
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Point table=\"ga\".\"g_hausanschluss\" (position_hausanschluss_in_betri) sql=", 
+         "order": 284
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsabschluss.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 233
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='nummer,typ' srid=31468 type=Point table=\"ga\".\"g_kondensatsammelstelle\" (position_in_betrieb) sql=", 
+         "order": 285
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Point table=\"ga_view\".\"g_leitungsoeffnung.position_in_betrieb\" (position_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 234
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Point table=\"ga\".\"g_leitungsabschluss\" (position_in_betrieb) sql=", 
+         "order": 286
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_regelstation.flaeche_in_betrieb\" (flaeche_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 235
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='nummer,typ' srid=31468 type=Point table=\"ga\".\"g_leitungsoeffnung\" (position_in_betrieb) sql=", 
+         "order": 287
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schacht.begrenzung_in_betrieb\" (begrenzung_in_betrieb) sql=aktueller_status = 'in Betrieb'", 
-         "order": 236
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_schacht\" (begrenzung_in_betrieb) sql=", 
+         "order": 288
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' user='nis_readonly' sslmode=disable key='oid' srid=31468 type=Polygon table=\"ga_view\".\"g_schutzmassnahme.flaeche\" (flaeche) sql=", 
-         "order": 237
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=Polygon table=\"ga\".\"g_schutzmassnahme\" (flaeche) sql=", 
+         "order": 289
       }, 
       {
          "expression": "@user_full_name", 
          "field": "geaendert_von", 
-         "layer": "service='srvce_nisconnect' sslmode=disable key='oid' srid=31468 type=LineString table=\"ga_view\".\"g_versorgungsltg_abschnitt.d_leitung_in_betrieb\" (d_leitung_in_betrieb) sql=", 
-         "order": 238
+         "layer": "dbname='nisconnect_integration' host=localhost port=5432 user='postgres' sslmode=disable key='system_id' srid=31468 type=LineString table=\"ga\".\"g_versorgungsltg_abschnitt\" (d_leitung_in_betrieb) sql=", 
+         "order": 290
       }
    ]
 }
