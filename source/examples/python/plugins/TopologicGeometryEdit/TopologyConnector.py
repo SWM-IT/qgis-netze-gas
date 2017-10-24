@@ -7,6 +7,7 @@ import psycopg2
 from PyQt4.QtGui import QMessageBox
 from platform import node
 from __builtin__ import str
+from TopoLine import TopoLine
 
 class TopologyConnector():
     '''
@@ -54,6 +55,12 @@ class TopologyConnector():
             self.connection.close()
             self.connection = None
     
+    def setLayerInfo(self, aLayerDbInfo):
+        '''
+        store DB information of current selected Layer
+        '''
+        self.layerDbInfo = aLayerDbInfo
+    
     def all_edges_for_node(self, nodeId):
         '''
         returns all connected edges to a node
@@ -75,7 +82,7 @@ class TopologyConnector():
                     edgeIds.append({'edgeId': row[0], 'edgeGeom': row[1]})
                     
                 # close connection
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return edgeIds
             
@@ -91,7 +98,7 @@ class TopologyConnector():
         returns the id of the topology node related to the given point object
         '''
         aPointId = aPointObject.attribute("system_id")
-        if aPointId:
+        if self.layerDbInfo and aPointId:
             # get db connection
             conn = self.db_connection(None, None, None, None)
             if conn:
@@ -99,7 +106,8 @@ class TopologyConnector():
                 # get db entry for point object
                 # exemplary house connection table - should be retrieved from selected layer
                 cur = conn.cursor()
-                haTableName = "ga.g_hausanschluss"
+                #haTableName = self.layerDbInfo.getFullTableName() # "ga.g_hausanschluss"
+                haTableName = "ga." + self.layerDbInfo.getTable()
                 reTableName = "gas_topo.relation"
                 
                 cur.execute("""SELECT f.element_id from """ + haTableName + """ e, """ + reTableName + """ f WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.element_type = 1""")
@@ -111,7 +119,7 @@ class TopologyConnector():
                     nodeId = rows[0][0]
                     
                 # close connection
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return nodeId
         
@@ -132,23 +140,42 @@ class TopologyConnector():
         if edgeIds:
             conn = self.db_connection(None, None, None, None)
             if conn:
-                lineId = None
+                lineIds = []
+                lineData = []
                 cur = conn.cursor()
+                topoId = 3 # FIXME: is this defined in the topogeometry?
                 reTableName = "gas_topo.relation"
-                alTableName = "ga.g_anschlussltg_abschnitt"
                 topoTableName = "topology.layer"
-                #cur.execute("""SELECT e.topogeo_id from """ + reTableName + """ e WHERE e.element_id = """ + str(edgeId) + """ AND e.element_type = 2""")
-                cur.execute("""SELECT f.system_id, e.element_id from """ + reTableName + """ e, """ + alTableName + """ f, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = h.feature_type AND h.layer_id = e.layer_id AND id(f.g) = e.topogeo_id""")
+                cur.execute("""SELECT e.topogeo_id, h.schema_name, h.table_name, e.element_id from """ + reTableName + """ e, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND h.topology_id = """ + str(topoId) + """ AND h.layer_id = e.layer_id""")
                 rows = cur.fetchall()
                 
-                # return all results
-                lineIds = []
                 for row in rows:
-                    lineIds.append({'lineId': row[0], 'edgeId': row[1]})
+                    aTopoLine = TopoLine()
+                    aTopoLine.setTopologyId(row[0])
+                    aTopoLine.setSchemaName(row[1])
+                    aTopoLine.setTableName(row[2])
+                    aTopoLine.setEdgeId(row[3])
+                    #lineIds.append({'topoId': row[0], 'table': lineTableName, 'edgeId': row[3]})
+                    lineIds.append(aTopoLine)
+                #alTableName = "ga.g_anschlussltg_abschnitt"
+                for aLine in lineIds:
+                    cur.execute("""SELECT f.system_id from """ + str(aLine.getFullTableName()) + """ f  WHERE id(f.g) = """ + str(aLine.getTopologyId()) )
+                    row = cur.fetchone()
+                    if row:
+                        aLine.setSystemId(row[0])
+                        #lineData.append({'lineId': row[0], 'edgeId': aLine['edgeId'], 'lineTable': aLine['table']})
+                        lineData.append(aLine)
                 
-                self.db_connection_close()
+                #cur.execute("""SELECT f.system_id, e.element_id, h.table_name from """ + reTableName + """ e, """ + alTableName + """ f, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND e.element_type = h.feature_type AND h.layer_id = e.layer_id AND id(f.g) = e.topogeo_id AND h.schema_name = 'ga'""")
+                #rows = cur.fetchall()
+                # return all results
+                #lineIds = []
+                #for row in rows:
+                #    lineIds.append({'lineId': row[0], 'edgeId': row[1], 'lineTable': row[2]})
                 
-                return lineIds
+                #self.db_connection_close()
+                
+                return lineData
             
     def get_geometry_for_nodeid(self, nodeId):
         '''
@@ -168,7 +195,7 @@ class TopologyConnector():
                     nodeGeom = rows[0][0]
                     
                 # close connection
-                self.db_connection_close()
+                #self.db_connection_close()
                 
                 return nodeGeom
             
