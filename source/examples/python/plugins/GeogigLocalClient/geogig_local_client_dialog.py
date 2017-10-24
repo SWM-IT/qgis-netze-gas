@@ -124,7 +124,6 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 self.commitsList.addTopLevelItem(item)
                 w = CommitTreeItemWidget(commit, tags.get(commit.commitid, []))
                 self.commitsList.setItemWidget(item, 0, w)
-                #self.commitsList.addItem(w)
             self.commitsList.resizeColumnToContents(0)
         
             
@@ -308,7 +307,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         
     def prepareSync(self, nbLayers):
-        # Do nothing
+        # Prepare the progressbar
         progressMessageBar = iface.messageBar().createMessage("Synchronising Layer")
         progress = QProgressBar()
         progress.setMaximum(nbLayers)
@@ -320,8 +319,13 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         
     def finaliseSync(self):
-        # Do nothing
+        # Update the list of commits
+        self.branchSelected()
+        
+        # Remove the progress bar
         iface.messageBar().clearWidgets()
+        
+        # Show a nice success message to the user
         iface.messageBar().pushMessage("GeoGig", "Layers have been synchronized",
                                        level=QgsMessageBar.INFO,
                                        duration=5)
