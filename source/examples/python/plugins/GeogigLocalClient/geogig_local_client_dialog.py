@@ -44,10 +44,9 @@ from geogig import config
 from geogig.geogigwebapi import repository
 from geogig.geogigwebapi.repository import Repository
 from geogig.tools.layertracking import getTrackingInfo
-from geogig.tools.layers import namesFromLayer
+from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
 from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeItem
-
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geogig_local_client_dialog_base.ui'))
@@ -246,7 +245,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         repo = Repository(tracking.repoUrl)
         filename, layername = namesFromLayer(layer)
 
-        changes = self.layerHasChangedLocally(filename, layername)
+        changes = hasLocalChanges(layer)
         
         if changes:
             ok = self.ensureDataModelIsUnchanged(filename, layername)
@@ -327,19 +326,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                        level=QgsMessageBar.INFO,
                                        duration=5)
         
-    
-    def layerHasChangedLocally(self, dbFileName, layerName):
-        """Returns true, if there are any changes to the layer in the local GPKG file"""
-        con = sqlite3.connect(dbFileName)
-        cursor = con.cursor()
-        cursor.execute("SELECT * FROM %s_audit;" % layerName)
-        hasChanged = bool(cursor.fetchall())
-        cursor.close()
-        con.close()
-        
-        return hasChanged
-        
-        
+                
     def ensureDataModelIsUnchanged(self, filename, layername):
         """I check, that the data model in the local GPKF file did not change between 
         last commit an now. If so, I show a message for the user and return false."""
