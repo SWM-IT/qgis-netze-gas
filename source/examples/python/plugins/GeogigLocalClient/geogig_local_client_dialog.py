@@ -141,6 +141,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                     w = BranchTreeItemWidget(branchName, branchName == currentBranchName)
                     self.branchesList.setItemWidget(topItem, 0, w)
                     
+                    if branchName == currentBranchName:
+                        topItem.setSelected(True)
+                    else:
+                        topItem.setExpanded(True)
+                    
                     break
                 
             # Now the other branches. Thea are all children of master
@@ -154,6 +159,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                     topItem.addChild(item)
                     w = BranchTreeItemWidget(branchName, branchName == currentBranchName)
                     self.branchesList.setItemWidget(item, 0, w)
+                    
+                    if branchName == currentBranchName:
+                        item.setSelected(True)
                 
             self.branchesList.resizeColumnToContents(0)  
             
@@ -256,7 +264,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 "before changing commit.",
                 QMessageBox.Ok) 
         else:
-            #self.gotoBranchForLayers(repo, branchName, layers)
+            self.gotoBranchForLayers(repo, branchName, layers)
              
             if branchName == self.MasterBranchName:
                 branchPath = [branchName]
@@ -264,6 +272,8 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 branchPath = [self.MasterBranchName, branchName]
                 
             self.branchtracking.addBranchInfo(repo, branchPath)
+            
+            self.fillBranchesList()
         
         
         
