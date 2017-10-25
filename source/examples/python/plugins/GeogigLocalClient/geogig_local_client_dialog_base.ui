@@ -92,7 +92,16 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QListWidget" name="branchesList"/>
+      <widget class="QTreeWidget" name="branchesList">
+       <attribute name="headerVisible">
+        <bool>false</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
+      </widget>
       <widget class="QTreeWidget" name="commitsList">
        <attribute name="headerVisible">
         <bool>false</bool>

@@ -35,7 +35,7 @@ from collections import defaultdict
 from qgis.utils import iface
 from qgis.core import QgsMessageLog
 from qgis.gui import QgsMessageBar
-from qgis.PyQt.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import (QMessageBox, QTreeWidgetItem)
 
 #from qgis.PyQt.QtGui import QIcon, QMessageBox, QPixmap
 from qgis.PyQt.QtGui import QIcon
@@ -106,12 +106,30 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         repo = self.getCurrentRepo()
         
         if repo:
-            self.branchesList.addItems(repo.branches())
+            brancheNames = repo.branches()
+            # "master is the only top level item    
+            for branchName in brancheNames:
+                if branchName == "master":
+                    topItem = BranchTreeItem(branchName, repo)
+                    self.branchesList.addTopLevelItem(topItem)
+                    break
+                
+            # Now the other branches. Thea are all children of master
+            # FIXME: I would like to introduce a better hierarchy...
+            for branchName in brancheNames:
+                if branchName == "master":
+                    pass
+                else:
+                    item = BranchTreeItem(branchName, repo)
+                    topItem.addChild(item)
+                
+            self.branchesList.resizeColumnToContents(0)  
             
+    
     def branchSelected(self):
         self.commitsList.clear()
-        if self.branchesList.selectedItems():
-            selectedBranchName = self.branchesList.selectedItems()[0].text()
+        selectedBranchName = self.selectedBranchName()
+        if selectedBranchName:
             repo = self.getCurrentRepo()
             
             tags = defaultdict(list)
@@ -196,8 +214,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 return repo
         
     def ensureSelectedBranch(self):
-        if self.branchesList.selectedItems():
-            return True, self.branchesList.selectedItems()[0].text()
+        selectedBranchName = self.selectedBranchName()
+        if selectedBranchName:
+            return True, selectedBranchName
         else:
             QMessageBox.warning(iface.mainWindow(), "No branch selected", 
                                 "Please select the branch to sync with.",
@@ -351,3 +370,19 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         else:
             return True
         
+    def selectedBranchName(self):
+        if self.branchesList.selectedItems():
+            return self.branchesList.selectedItems()[0].branchName
+        
+class BranchTreeItem(QTreeWidgetItem):
+    def __init__(self, branchName, repo):
+        QTreeWidgetItem.__init__(self)
+        self.branchName = branchName
+        self.ref = branchName
+        self.repo = repo
+        #self.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+        self.setText(0, branchName)
+        #self.setIcon(0, branchIcon)
+        self._commit = None
+        
+    
