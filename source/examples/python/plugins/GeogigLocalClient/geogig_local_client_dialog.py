@@ -27,8 +27,10 @@ import sqlite3
 from functools import partial
 
 from PyQt4 import QtGui, uic
-from PyQt4.QtGui import QProgressBar
+from PyQt4.QtGui import (QProgressBar, QTextEdit)
 from PyQt4.QtCore import *
+
+#from PyQt4.QtGui import QTextEdit
 
 from collections import defaultdict
 
@@ -40,7 +42,8 @@ from qgis.PyQt.QtWidgets import (QMessageBox,
                                  QTreeWidgetItem, 
                                  QMenu, 
                                  QAbstractItemView, 
-                                 QAction)
+                                 QAction,
+                                 QLabel)
 
 #from qgis.PyQt.QtGui import QIcon, QMessageBox, QPixmap
 from qgis.PyQt.QtGui import QIcon
@@ -54,6 +57,9 @@ from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
 from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeItem
 
+from GeogigLocalClient.tools.branchtracking import BranchesTracker
+#from wx._grid import Grid_IsCurrentCellReadOnly
+
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geogig_local_client_dialog_base.ui'))
 
@@ -66,6 +72,7 @@ def icon(fileName):
 class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     
     StrDefaultCommitComment = "Add comment for commit"
+    MasterBranchName = "master"
     
     def __init__(self, parent=None):
         """Constructor."""
@@ -75,6 +82,8 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
+        
+        self.branchtracking = BranchesTracker()
                 
         self.setupUi(self)
         self.tbSync.setIcon(icon("sync_16.png"))
@@ -120,26 +129,39 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.branchesList.clear()
         self.commitsList.clear()
         repo = self.getCurrentRepo()
+        currentBranchName = self.getCurrentBranchName(repo)
         
         if repo:
             brancheNames = repo.branches()
             # "master is the only top level item    
             for branchName in brancheNames:
-                if branchName == "master":
-                    topItem = BranchTreeItem(self, branchName, repo)
+                if branchName == self.MasterBranchName:
+                    topItem = BranchTreeItem(self, branchName, repo, branchName == currentBranchName)
                     self.branchesList.addTopLevelItem(topItem)
+                    w = BranchTreeItemWidget(branchName, branchName == currentBranchName)
+                    self.branchesList.setItemWidget(topItem, 0, w)
+                    
                     break
                 
             # Now the other branches. Thea are all children of master
             # FIXME: I would like to introduce a better hierarchy...
             for branchName in brancheNames:
-                if branchName == "master":
+                if branchName == self.MasterBranchName:
                     pass
                 else:
-                    item = BranchTreeItem(self, branchName, repo)
+                    # I assume, that branch names are unique inside one repository.
+                    item = BranchTreeItem(self, branchName, repo, branchName == currentBranchName)
                     topItem.addChild(item)
+                    w = BranchTreeItemWidget(branchName, branchName == currentBranchName)
+                    self.branchesList.setItemWidget(item, 0, w)
                 
             self.branchesList.resizeColumnToContents(0)  
+            
+    def getCurrentBranchName(self, repo):
+        branchPath = self.branchtracking.getCurrentBranchPath(repo)
+        
+        if branchPath:
+            return branchPath[-1]
             
     
     def branchSelected(self):
@@ -234,7 +256,14 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 "before changing commit.",
                 QMessageBox.Ok) 
         else:
-             self.gotoBranchForLayers(repo, branchName, layers)
+            #self.gotoBranchForLayers(repo, branchName, layers)
+             
+            if branchName == self.MasterBranchName:
+                branchPath = [branchName]
+            else:
+                branchPath = [self.MasterBranchName, branchName]
+                
+            self.branchtracking.addBranchInfo(repo, branchPath)
         
         
         
@@ -467,16 +496,16 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     
         
 class BranchTreeItem(QTreeWidgetItem):
-    def __init__(self, owner, branchName, repo):
+    def __init__(self, owner, branchName, repo, isCurrent = False):
         QTreeWidgetItem.__init__(self)
         self.owner = owner
         self.branchName = branchName
         self.ref = branchName
         self.repo = repo
-        #self.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
-        self.setText(0, branchName)
+
         #self.setIcon(0, branchIcon)
         self._commit = None
+        self.current = isCurrent
         
     def menu(self):
         menu = QMenu()
@@ -487,4 +516,22 @@ class BranchTreeItem(QTreeWidgetItem):
         
         return menu
 
+
+class BranchTreeItemWidget(QLabel):
+    def __init__(self, branchName, isCurrent):
+        QTextEdit.__init__(self)
+        self.setWordWrap(False)
+        self.branchName = branchName
+        self.isCurrent = isCurrent
+        self.updateText()
+
+    def updateText(self):
+        size = self.font().pointSize()
         
+        if self.isCurrent:
+            text = ('<b><font style="font-size:%spt">%s</font></b>' %
+                    (str(size + 1), self.branchName))
+        else:
+            text = self.branchName
+            
+        self.setText(text)
