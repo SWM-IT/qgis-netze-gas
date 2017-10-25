@@ -41,6 +41,7 @@ from qgis.gui import QgsMessageBar
 from qgis.PyQt.QtWidgets import (QMessageBox, 
                                  QTreeWidgetItem, 
                                  QMenu, 
+                                 QInputDialog,
                                  QAbstractItemView, 
                                  QAction,
                                  QLabel)
@@ -104,9 +105,6 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.branchesList.itemSelectionChanged.connect(self.branchSelected)
         self.branchesList.customContextMenuRequested.connect(self.showBranchedPopupMenu)
         
-        self.commitText.textChanged.connect(self.commitTextChanged)
-        self.commitText.setTextColor(QtGui.QColor("grey"))
-        
         self.updateClient()
     
     def showBranchedPopupMenu(self, point):
@@ -117,7 +115,6 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def updateClient(self):
         self.fillServersCombo()
-        self.revertCommitText()
         
     def fillServersCombo(self):
         self.cbbServers.clear()
@@ -204,34 +201,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 self.commitsList.setItemWidget(item, 0, w)
             self.commitsList.resizeColumnToContents(0)
         
-            
-    
-    def getCommitText(self): 
-        return self.commitText.document().toPlainText()
-    
-    def ensureCommitComment(self):
-        commitComment = self.getCommitText()
-        
-        if commitComment == "" or commitComment == self.StrDefaultCommitComment:
-            ret = QMessageBox.warning(iface.mainWindow(), "No commit comment",
-                        "Please type in a comment for the commit.",
-                        QMessageBox.Ok)
-            return False, ""
-        else:
-            return True, commitComment
-        
-            
-    def commitTextChanged(self):
-        if self.commitText.document().toPlainText() == self.StrDefaultCommitComment:
-            self.commitText.setTextColor(QtGui.QColor("grey"))
-        else:
-            self.commitText.setTextColor(QtGui.QColor("black"))
-        
-    def revertCommitText(self):
-        self.commitText.setTextColor(QtGui.QColor("grey"))
-        self.commitText.document().setPlainText(self.StrDefaultCommitComment)
-
-        
+                
     def syncSelectedBranch(self):
         """Synchronize the branch selected in the branch tree
         
@@ -245,12 +215,19 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         if not ok:
             return       
         
-        ok, commitComment = self.ensureCommitComment()
+        commitComment, ok = QInputDialog.getText(self, 'Commit message',
+                                                        'Enter a message:')
         if not ok:
             return  
+        if commitComment == "":
+            QMessageBox.warning(iface.mainWindow(), "No commit comment",
+                        "Please type in a comment for the commit.",
+                        QMessageBox.Ok)
+            return
 
         layers = self.layersInBranch(repo, branchName)
         self.syncLayers(layers, branchName, commitComment)
+        
         
     def gotoBranch(self, branchName):
         """Move to the selected branch
