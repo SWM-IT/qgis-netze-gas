@@ -24,8 +24,9 @@
 import os
 import sqlite3
 
-from PyQt4 import QtGui, uic
+from functools import partial
 
+from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QProgressBar
 from PyQt4.QtCore import *
 
@@ -35,13 +36,18 @@ from collections import defaultdict
 from qgis.utils import iface
 from qgis.core import QgsMessageLog
 from qgis.gui import QgsMessageBar
-from qgis.PyQt.QtWidgets import (QMessageBox, QTreeWidgetItem)
+from qgis.PyQt.QtWidgets import (QMessageBox, 
+                                 QTreeWidgetItem, 
+                                 QMenu, 
+                                 QAbstractItemView, 
+                                 QAction)
 
 #from qgis.PyQt.QtGui import QIcon, QMessageBox, QPixmap
 from qgis.PyQt.QtGui import QIcon
 
 from geogig import config
 from geogig.geogigwebapi import repository
+from geogig.repowatcher import repoWatcher
 from geogig.geogigwebapi.repository import Repository
 from geogig.tools.layertracking import getTrackingInfo
 from geogig.tools.layers import namesFromLayer, hasLocalChanges
@@ -57,7 +63,6 @@ def icon(fileName):
     return QIcon(os.path.join(pluginPath, "ui", "resources", fileName))
 
 
-#class GeogigLocalClientDialog(QtGui.QDialog, FORM_CLASS):
 class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     
     StrDefaultCommitComment = "Add comment for commit"
@@ -78,11 +83,22 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.cbbServers.currentIndexChanged.connect(self.fillReposCombo)
         self.cbbRepos.currentIndexChanged.connect(self.fillBranchesList)
         self.tbSync.clicked.connect(self.syncSelectedBranch)
-        self.branchesList.itemClicked.connect(self.branchSelected)
+        
+        self.branchesList.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.branchesList.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.branchesList.itemSelectionChanged.connect(self.branchSelected)
+        self.branchesList.customContextMenuRequested.connect(self.showBranchedPopupMenu)
+        
         self.commitText.textChanged.connect(self.commitTextChanged)
         self.commitText.setTextColor(QtGui.QColor("grey"))
+        
         self.updateClient()
     
+    def showBranchedPopupMenu(self, point):
+        item = self.branchesList.currentItem()
+        self.menu = item.menu()
+        point = self.branchesList.mapToGlobal(point)
+        self.menu.popup(point)
         
     def updateClient(self):
         self.fillServersCombo()
@@ -110,7 +126,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             # "master is the only top level item    
             for branchName in brancheNames:
                 if branchName == "master":
-                    topItem = BranchTreeItem(branchName, repo)
+                    topItem = BranchTreeItem(self, branchName, repo)
                     self.branchesList.addTopLevelItem(topItem)
                     break
                 
@@ -120,7 +136,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 if branchName == "master":
                     pass
                 else:
-                    item = BranchTreeItem(branchName, repo)
+                    item = BranchTreeItem(self, branchName, repo)
                     topItem.addChild(item)
                 
             self.branchesList.resizeColumnToContents(0)  
@@ -173,6 +189,10 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
 
         
     def syncSelectedBranch(self):
+        """Synchronize the branch selected in the branch tree
+        
+        I check all required inputs and then run the sync over all layers available for this branch"""
+        
         ok, repo = self.ensureCurrentRepo()
         if not ok:
             return
@@ -187,6 +207,35 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
 
         layers = self.layersInBranch(repo, branchName)
         self.syncLayers(layers, branchName, commitComment)
+        
+    def gotoBranch(self, branchName):
+        """Move to the selected branch
+        
+        I check all required inputs and then move all layers available for this branch to the selected branch.
+        I take the head commit of the selected branch"""
+        
+        # Functionality mostly copied from layeractions.changeVersion:
+        
+        ok, repo = self.ensureCurrentRepo()
+        if not ok:
+            return
+        
+        ok, branchName = self.ensureSelectedBranch()
+        if not ok:
+            return 
+        
+        layers = self.layersInBranch(repo, branchName)
+        changedLayes = self.getChangedLayersOf(layers) 
+        
+        if changedLayes:
+            QMessageBox.warning(config.iface.mainWindow(), 'Cannot change branch',
+                "One o more layers have local changes that would be overwritten. "
+                "Either sync the branch or revert local changes "
+                "before changing commit.",
+                QMessageBox.Ok) 
+        else:
+             self.gotoBranchForLayers(repo, branchName, layers)
+        
         
         
     def ensureCurrentRepo(self):
@@ -244,6 +293,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         i = 0
         for layer in layers:
+            self.progressMessageBar.setText("Synchronising Layer: {0}".format(layer.name()))
             self.syncLayer(layer, branchName, commitMessage)
             i += 1
             self.progressBar.setValue(i)
@@ -327,14 +377,20 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def prepareSync(self, nbLayers):
         # Prepare the progressbar
-        progressMessageBar = iface.messageBar().createMessage("Synchronising Layer")
+        self.prepareProgressBar("Synchronising Layer", nbLayers)
+
+    def prepareProgressBar(self, message, maxNb):
+        # Prepare the progressbar
+        progressMessageBar = iface.messageBar().createMessage(message)
         progress = QProgressBar()
-        progress.setMaximum(nbLayers)
+        progress.setMaximum(maxNb)
         progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
         progressMessageBar.layout().addWidget(progress)
         iface.messageBar().pushWidget(progressMessageBar, iface.messageBar().INFO)
         
-        self.progressBar = progress
+        self.progressMessageBar = progressMessageBar
+        self.progressBar = progress        
+        
         
         
     def finaliseSync(self):
@@ -349,6 +405,31 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                        level=QgsMessageBar.INFO,
                                        duration=5)
         
+    def gotoBranchForLayers(self, repo, branchName, layers):
+        self.prepareProgressBar("Moving to branch {0}".format(branchName), len(layers))
+        
+        i = 0
+        for layer in layers:
+            self.progressMessageBar.setText("Moving to branch {0}. Layer: {1}".format(branchName, layer.name()))
+            
+            tracking = getTrackingInfo(layer)
+            repo.checkoutlayer(tracking.geopkg, layer.name(), None, branchName)
+            layer.reload()
+            layer.triggerRepaint()
+            repoWatcher.layerUpdated.emit(layer)
+            repoWatcher.repoChanged.emit(repo)
+
+            i += 1
+            self.progressBar.setValue(i)
+            
+         # Remove the progress bar
+        iface.messageBar().clearWidgets()
+        
+        # Show a nice success message to the user
+        iface.messageBar().pushMessage("GeoGig", "Move to branch " + branchName + " done",
+                                       level=QgsMessageBar.INFO,
+                                       duration=5)
+
                 
     def ensureDataModelIsUnchanged(self, filename, layername):
         """I check, that the data model in the local GPKF file did not change between 
@@ -374,9 +455,21 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         if self.branchesList.selectedItems():
             return self.branchesList.selectedItems()[0].branchName
         
+    def getChangedLayersOf(self, layers):
+        changedLayers = []
+        
+        for layer in layers:
+            changes = hasLocalChanges(layer)
+            if changes:
+                changedLayers.add(layer)
+                
+        return changedLayers 
+    
+        
 class BranchTreeItem(QTreeWidgetItem):
-    def __init__(self, branchName, repo):
+    def __init__(self, owner, branchName, repo):
         QTreeWidgetItem.__init__(self)
+        self.owner = owner
         self.branchName = branchName
         self.ref = branchName
         self.repo = repo
@@ -385,4 +478,13 @@ class BranchTreeItem(QTreeWidgetItem):
         #self.setIcon(0, branchIcon)
         self._commit = None
         
-    
+    def menu(self):
+        menu = QMenu()
+        
+        gotoAction = QAction("Goto", menu)
+        gotoAction.triggered.connect(partial(self.owner.gotoBranch, self.branchName))
+        menu.addAction(gotoAction)
+        
+        return menu
+
+        
