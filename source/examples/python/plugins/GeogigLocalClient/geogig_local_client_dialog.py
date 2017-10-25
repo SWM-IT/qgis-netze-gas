@@ -55,7 +55,7 @@ from geogig.geogigwebapi.repository import Repository
 from geogig.tools.layertracking import getTrackingInfo
 from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
-from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeItem
+from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeItem 
 
 from GeogigLocalClient.tools.branchtracking import BranchesTracker
 #from wx._grid import Grid_IsCurrentCellReadOnly
@@ -91,7 +91,13 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.tbPush.setIcon(icon("push_16.png"))
         self.cbbServers.currentIndexChanged.connect(self.fillReposCombo)
         self.cbbRepos.currentIndexChanged.connect(self.fillBranchesList)
+        
         self.tbSync.clicked.connect(self.syncSelectedBranch)
+        self.tbPull.clicked.connect(self.pullMasterToCurrentBranch)
+        self.tbPush.clicked.connect(self.pushCurrentBranchToMaster)
+        
+        self.tbPull.setEnabled(False)
+        self.tbPush.setEnabled(False)
         
         self.branchesList.setContextMenuPolicy(Qt.CustomContextMenu)
         self.branchesList.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -164,13 +170,21 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                         item.setSelected(True)
                 
             self.branchesList.resizeColumnToContents(0)  
+            self.currentBranchChanged(currentBranchName)
             
     def getCurrentBranchName(self, repo):
         branchPath = self.branchtracking.getCurrentBranchPath(repo)
         
         if branchPath:
             return branchPath[-1]
-            
+        
+    def currentBranchChanged(self, currentBranchName):
+        if not currentBranchName or currentBranchName == "" or currentBranchName == self.MasterBranchName:
+            self.tbPull.setEnabled(False)
+            self.tbPush.setEnabled(False)
+        else:
+            self.tbPull.setEnabled(True)
+            self.tbPush.setEnabled(True)          
     
     def branchSelected(self):
         self.commitsList.clear()
@@ -275,6 +289,57 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             
             self.fillBranchesList()
         
+    def pullMasterToCurrentBranch(self):
+        repo = self.getCurrentRepo()
+        currentBranchName = self.getCurrentBranchName(repo)
+        self.mergeInto(currentBranchName, self.MasterBranchName)
+    
+    def pushCurrentBranchToMaster(self):
+        repo = self.getCurrentRepo()
+        currentBranchName = self.getCurrentBranchName(repo)
+        self.mergeInto(self.MasterBranchName, currentBranchName)
+    
+    def mergeInto(self, mergeInto, branch):
+        """ merge the branch names branch into the branch mergeInto"""
+        # FIXME: The whole method is more or less copied from historyviewer.
+        # Would be better to have this at one common point
+        repo = self.getCurrentRepo()
+        
+        conflicts = repo.merge(branch, mergeInto)
+        if conflicts:
+            ret = QMessageBox.warning(iface.mainWindow(), "Conflict(s) found while syncing",
+                                      "There are conflicts between local and remote changes.\n"
+                                      "Do you want to continue and fix them?",
+                                      QMessageBox.Yes | QMessageBox.No)
+            if ret == QMessageBox.No:
+                repo.closeTransaction(conflicts[0].transactionId)
+                return
+
+            dlg = ConflictDialog(conflicts)
+            dlg.exec_()
+            solved, resolvedConflicts = dlg.solved, dlg.resolvedConflicts
+            if not solved:
+                repo.closeTransaction(conflicts[0].transactionId)
+                return
+            for conflict, resolution in zip(conflicts, list(resolvedConflicts.values())):
+                if resolution == ConflictDialog.LOCAL:
+                    conflict.resolveWithLocalVersion()
+                elif resolution == ConflictDialog.REMOTE:
+                    conflict.resolveWithRemoteVersion()
+                elif resolution == ConflictDialog.DELETE:
+                    conflict.resolveDeletingFeature()
+                else:
+                    conflict.resolveWithNewFeature(resolution)
+            user, email = config.getUserInfo()
+            if user is None:
+                return
+            repo.commitAndCloseMergeAndTransaction(user, email, "Resolved merge conflicts", conflicts[0].transactionId)
+
+
+        iface.messageBar().pushMessage("GeoGig", "Branch has been correctly merged",
+                                              level=QgsMessageBar.INFO, duration=5)
+        repoWatcher.repoChanged.emit(repo)
+
         
         
     def ensureCurrentRepo(self):
