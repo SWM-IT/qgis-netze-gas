@@ -294,6 +294,21 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 self.fillBranchesList()
                 repoWatcher.repoChanged.emit(repo)
 
+    def deleteBranch(self, branchName):
+        ok, repo = self.ensureCurrentRepo()
+        if not ok:
+            return
+        
+        ret = QMessageBox.question(self, 'Delete Branch',
+                    'Are you sure you want to delete this branch?',
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No)
+        if ret == QMessageBox.No:
+            return
+
+        repo.deletebranch(branchName)
+        self.fillBranchesList()
+        repoWatcher.repoChanged.emit(repo)
         
     def pullMasterToCurrentBranch(self):
         repo = self.getCurrentRepo()
@@ -597,7 +612,11 @@ class BranchTreeItem(QTreeWidgetItem):
         
         createBranchAction = QAction("Create branch", menu)
         createBranchAction.triggered.connect(partial(self.owner.createBranchFromBranch, self.branchName))
-        menu.addAction(createBranchAction)        
+        menu.addAction(createBranchAction)   
+        
+        deleteBranchAction = QAction("Delete branch", menu)
+        deleteBranchAction.triggered.connect(partial(self.owner.deleteBranch, self.branchName))
+        menu.addAction(deleteBranchAction)                
         
         return menu
 
