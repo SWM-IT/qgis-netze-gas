@@ -201,6 +201,10 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 self.commitsList.setItemWidget(item, 0, w)
             self.commitsList.resizeColumnToContents(0)
         
+    def latestCommit(self, repo, branchName):
+        commits = repo.log(until = branchName, limit = 1, path = None)
+        if commits:
+            return commits[0] 
                 
     def syncSelectedBranch(self):
         """Synchronize the branch selected in the branch tree
@@ -274,6 +278,22 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             self.branchtracking.addBranchInfo(repo, branchPath)
             
             self.fillBranchesList()
+            
+    def createBranchFromBranch(self, branchName):
+        ok, repo = self.ensureCurrentRepo()
+        if not ok:
+            return
+        
+        commit = self.latestCommit(repo, branchName)
+        
+        if commit:
+            text, ok = QInputDialog.getText(self, 'Create New Branch',
+                                            'Enter the name for the new branch:')
+            if ok:
+                repo.createbranch(commit.commitid, text.replace(" ", "_"))
+                self.fillBranchesList()
+                repoWatcher.repoChanged.emit(repo)
+
         
     def pullMasterToCurrentBranch(self):
         repo = self.getCurrentRepo()
@@ -571,9 +591,13 @@ class BranchTreeItem(QTreeWidgetItem):
     def menu(self):
         menu = QMenu()
         
-        gotoAction = QAction("Goto", menu)
+        gotoAction = QAction("Goto this branch", menu)
         gotoAction.triggered.connect(partial(self.owner.gotoBranch, self.branchName))
         menu.addAction(gotoAction)
+        
+        createBranchAction = QAction("Create branch", menu)
+        createBranchAction.triggered.connect(partial(self.owner.createBranchFromBranch, self.branchName))
+        menu.addAction(createBranchAction)        
         
         return menu
 
