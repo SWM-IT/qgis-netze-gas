@@ -211,21 +211,30 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         if not ok:
             return
         
-        ok, branchName = self.ensureSelectedBranch()
-        if not ok:
-            return       
+        # If a current branch is defined, take that one
+        branchName = self.getCurrentBranchName(repo)
         
-        commitComment, ok = QInputDialog.getText(self, 'Commit message',
-                                                        'Enter a message:')
-        if not ok:
-            return  
-        if commitComment == "":
-            QMessageBox.warning(iface.mainWindow(), "No commit comment",
-                        "Please type in a comment for the commit.",
-                        QMessageBox.Ok)
-            return
+        if not branchName:
+            ok, branchName = self.ensureSelectedBranch()
+            if not ok:
+                return       
 
-        layers = self.layersInBranch(repo, branchName)
+        layers = self.layersInBranch(repo, branchName)        
+        changedLayes = self.getChangedLayersOf(layers) 
+        
+        if changedLayes:
+            commitComment, ok = QInputDialog.getText(self, 'Commit message',
+                                                    'Enter a message:')
+            if not ok:
+                return  
+            if commitComment == "":
+                QMessageBox.warning(iface.mainWindow(), "No commit comment",
+                                    "Please type in a comment for the commit.",
+                                    QMessageBox.Ok)
+                return
+        else:
+            commitComment = ""
+
         self.syncLayers(layers, branchName, commitComment)
         
         
@@ -374,7 +383,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         i = 0
         for layer in layers:
-            self.progressMessageBar.setText("Synchronising Layer: {0}".format(layer.name()))
+            self.progressMessageBar.setText("Synchronising branch {0}, Layer: {1}".format(branchName, layer.name()))
             self.syncLayer(layer, branchName, commitMessage)
             i += 1
             self.progressBar.setValue(i)
@@ -542,7 +551,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         for layer in layers:
             changes = hasLocalChanges(layer)
             if changes:
-                changedLayers.add(layer)
+                changedLayers.append(layer)
                 
         return changedLayers 
     
