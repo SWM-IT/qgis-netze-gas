@@ -26,6 +26,7 @@ class LayerDbInfo:
             table = vals['table'].split('.')
             self.schemaName = table[0].strip('"')
             self.tableName = table[1].strip('"')
+            return 
         else:
             return
 

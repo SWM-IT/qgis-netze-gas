@@ -238,7 +238,7 @@ class TopologicGeometryEdit:
         # get the selected features
         selected = layer.selectedFeatures()
         if not selected:
-          QMessageBox.information(None, toolname, "Select a house connection to highlight topological connected house connection line(s)")
+          QMessageBox.information(None, toolname, "Select a point object to highlight topological connected line object(s)")
           return
         
         return selected
@@ -253,62 +253,66 @@ class TopologicGeometryEdit:
             aFeature = selected[0]
             #initialLayer = iface.mapCanvas().currentLayer()
             conFeaturesResult = self.connectedFeatures(aFeature)
-            conFeaturesList = conFeaturesResult['relatedLineIds']
-            if conFeaturesList:
-                # add connected Features to selection set and change colour to red
-                #iface.mapCanvas().setSelectionColor( QColor("red") )
-                for aTopoLine in conFeaturesList:
-                    drawLayer = None
-                    lineLayerName = aTopoLine.getTableName() #'g_anschlussltg_abschnitt'
-                    for aLayer in iface.mapCanvas().layers():
-                        if aLayer.shortName() == lineLayerName:
-                            #drawLayer = aLayer
-                            #iface.setActiveLayer(aLayer)
-                            #iface.mapCanvas().setSelectionColor( QColor("red") )
-                            #iface.mapCanvas().refresh()
-                            #iface.legendInterface().setCurrentLayer(aLayer)
-                            qFeaturesData = self.findFeatures(aLayer, None, None, conFeaturesResult)
-                            qFeaturesList = qFeaturesData['lineFeaturesList']
-                            aLayer.setSelectedFeatures(qFeaturesList)
-                            break
-                
-                #drawLayer.setSelectedFeatures(conFeaturesList)
-                #dBox = drawLayer.boundingBoxOfSelected()
-                #iface.mapCanvas().setExtent(dBox)
-                #iface.mapCanvas().refreshAllLayers()
-                #iface.setActiveLayer(initialLayer)
-                #iface.mapCanvas().setSelectionColor( QColor("red") )
-                iface.mapCanvas().refresh()
-                #iface.mapCanvas().setSelectionColor( QColor("yellow") )
+            qFeaturesData = self.findLineFeatures(None, conFeaturesResult['relatedLineIds'])
+            qFeaturesList = qFeaturesData['lineFeaturesList']
+            
+            for aLayer in iface.mapCanvas().layers():
+                if aLayer.shortName() in qFeaturesList:
+                    aLayer.setSelectedFeatures(qFeaturesList[aLayer.shortName()])
+            
+            #drawLayer.setSelectedFeatures(conFeaturesList)
+            #dBox = drawLayer.boundingBoxOfSelected()
+            #iface.mapCanvas().setExtent(dBox)
+            #iface.mapCanvas().refreshAllLayers()
+            #iface.setActiveLayer(initialLayer)
+            #iface.mapCanvas().setSelectionColor( QColor("red") )
+            iface.mapCanvas().refresh()
+            #iface.mapCanvas().setSelectionColor( QColor("yellow") )
         return True
     
-    def findFeatures(self, aLayer, aEdgeLayer, aNodeLayer, conFeaturesResult):
+    def findLineFeatures(self, aEdgeLayer, topoLines):
         '''
-        identifies aList of features on aLayer by a list of ids
+        identifies aList of line features on aLayer by a list of ids
         '''
         # save start time
         start = time.time()
         
-        qFeaturesList = []
+        qFeaturesList = {}
         qEdgeFeaturesList = []
-        qNodeFeatureId = None
-        topoLines = conFeaturesResult['relatedLineIds']
         
         for aTopoLine in topoLines:
-            if aLayer:
+            lineLayerName = aTopoLine.getTableName() #'g_anschlussltg_abschnitt'
+            lineLayer = None
+            for aLayer in iface.mapCanvas().layers():
+                if aLayer.shortName() == lineLayerName:
+                    lineLayer = aLayer
+                    if lineLayerName not in qFeaturesList:
+                        qFeaturesList[lineLayerName] = []
+                    break
+            if lineLayer:
                 request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aTopoLine.getSystemId()))
-                request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], aLayer.fields())
-                for aQsFeature in aLayer.getFeatures( request ):
-                    qFeaturesList.append(aQsFeature.id())
+                request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], lineLayer.fields())
+                for aQsFeature in lineLayer.getFeatures( request ):
+                    if aQsFeature.id() not in qFeaturesList[lineLayerName]:
+                        qFeaturesList[lineLayerName].append(aQsFeature.id())
             if aEdgeLayer:
                 request = QgsFeatureRequest().setFilterExpression(u'"edge_id" = ' + str(aTopoLine.getEdgeId()))
                 request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], aEdgeLayer.fields())
                 for aQsEdgeFeature in aEdgeLayer.getFeatures( request ):
                     qEdgeFeaturesList.append(aQsEdgeFeature.id())
         
+        self.showTimeMessage('findLineFeatures', time.time() - start)        
+        return {'lineFeaturesList': qFeaturesList, 'edgeFeaturesList': qEdgeFeaturesList}
+                    
+    def findNodeFeature(self, aNodeLayer, aTopoNodeId):
+        '''
+        identify node on aNodeLayer by node_id ATopoNodeId
+        '''
+        qNodeFeatureId = None
+        
         if aNodeLayer:        
             # get node feature
-            request = QgsFeatureRequest().setFilterExpression(u'"node_id" = ' + str(conFeaturesResult['topoNodeId']))
+            request = QgsFeatureRequest().setFilterExpression(u'"node_id" = ' + str(aTopoNodeId))
             request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], aNodeLayer.fields())
             qNodeFeaturesList = []
             for aQsNodeFeature in aNodeLayer.getFeatures( request ):
@@ -316,9 +320,8 @@ class TopologicGeometryEdit:
         
             if len(qNodeFeaturesList) > 0:
                 qNodeFeatureId = qNodeFeaturesList[0]
-        
-        self.showTimeMessage('findFeatures', time.time() - start)        
-        return {'lineFeaturesList': qFeaturesList, 'edgeFeaturesList': qEdgeFeaturesList, 'nodeFeatureId': qNodeFeatureId}
+                
+        return qNodeFeatureId 
                     
     def connectedFeatures(self, aFeature):
         '''
@@ -451,78 +454,90 @@ class TopologicGeometryEdit:
             # a point was moved, the connected features should be polygons (for now)
             oPoint = originalGeom.asPoint()
             cPoint = changedGeom.asPoint()
-            #for aLayer in iface.mapCanvas().layers():
-            for aLayer in iface.legendInterface().layers():
-                if aLayer.shortName() == 'g_anschlussltg_abschnitt':
-                    lineLayer = aLayer
-                    break
-            
-            if not (lineLayer and self.edgeLayer and self.nodeLayer):
+
+            if not (self.edgeLayer and self.nodeLayer):
                 # something wrong
                 return
             
-            qFeaturesData = self.findFeatures(lineLayer, self.edgeLayer, self.nodeLayer, conFeaturesResult)
-            qLineFeaturesList = qFeaturesData['lineFeaturesList']
-            qEdgeFeaturesList = qFeaturesData['edgeFeaturesList']
-                
             success = True
-            if not lineLayer.isEditable():
-                lineLayer.startEditing()
+            
             if not self.edgeLayer.isEditable():
                 self.edgeLayer.startEditing()
             if not self.nodeLayer.isEditable():
                 self.nodeLayer.startEditing()
             
-            lineLayer.beginEditCommand("Topological Geometry Edit Line")
-            self.edgeLayer.beginEditCommand("Topological Geometry Edit Edge")
-            self.nodeLayer.beginEditCommand("Topological Geometry Edit Node")
-            self.insideTopoEdit = True
-            
-            for aConFeatureId in qLineFeaturesList:
-                for qFeature in lineLayer.getFeatures(QgsFeatureRequest(aConFeatureId)):
-                    aConPoly = qFeature.geometry().asPolyline()
-                    newPoly = []
-                    for aCoord in aConPoly:
-                        if aCoord.x() == oPoint.x() and aCoord.y() == oPoint.y():
-                            newPoly.append(cPoint)
-                        else:
-                            newPoly.append(aCoord)
-                    newGeom = QgsGeometry.fromPolyline(newPoly)
-                    #lineLayer.changeGeometry(qFeature.id(), newGeom)
-                    changeDone = lineLayer.changeGeometry(qFeature.id(), newGeom)
-                    success = success and changeDone
-                    
-            for aConEdgeId in qEdgeFeaturesList:
-                for qFeature in self.edgeLayer.getFeatures(QgsFeatureRequest(aConEdgeId)):
-                    aEdgePoly = qFeature.geometry().asPolyline()
-                    newPoly = []
-                    for aCoord in aEdgePoly:
-                        if aCoord.x() == oPoint.x() and aCoord.y() == oPoint.y():
-                            newPoly.append(cPoint)
-                        else:
-                            newPoly.append(aCoord)
-                    newGeom = QgsGeometry.fromPolyline(newPoly)
+            conFeaturesList = conFeaturesResult['relatedLineIds']
+            if conFeaturesList:
                 
-                    changeDone = self.edgeLayer.changeGeometry(qFeature.id(), newGeom)
+                self.insideTopoEdit = True
+
+                qFeaturesData = self.findLineFeatures(self.edgeLayer, conFeaturesList)
+                qLineFeaturesList = qFeaturesData['lineFeaturesList']
+                qEdgeFeaturesList = qFeaturesData['edgeFeaturesList']
+                    
+                for lineLayer in iface.mapCanvas().layers():
+                    if lineLayer.shortName() in qLineFeaturesList:
+                
+                        if not lineLayer.isEditable():
+                            lineLayer.startEditing()
+                
+                        lineLayer.beginEditCommand("Topological Geometry Edit Line")
+                
+                        for aConFeatureId in qLineFeaturesList[lineLayer.shortName()]:
+                            for qFeature in lineLayer.getFeatures(QgsFeatureRequest(aConFeatureId)):
+                                aConPoly = qFeature.geometry().asPolyline()
+                                newPoly = []
+                                for aCoord in aConPoly:
+                                    if aCoord.x() == oPoint.x() and aCoord.y() == oPoint.y():
+                                        newPoly.append(cPoint)
+                                    else:
+                                        newPoly.append(aCoord)
+                                newGeom = QgsGeometry.fromPolyline(newPoly)
+                                #lineLayer.changeGeometry(qFeature.id(), newGeom)
+                                changeDone = lineLayer.changeGeometry(qFeature.id(), newGeom)
+                                success = success and changeDone
+
+                        if success == False:
+                            lineLayer.destroyEditCommand()
+                            break
+                        else:
+                            lineLayer.endEditCommand()
+                
+                self.edgeLayer.beginEditCommand("Topological Geometry Edit Edge")
+                            
+                for aConEdgeId in qEdgeFeaturesList:
+                    for qFeature in self.edgeLayer.getFeatures(QgsFeatureRequest(aConEdgeId)):
+                        aEdgePoly = qFeature.geometry().asPolyline()
+                        newPoly = []
+                        for aCoord in aEdgePoly:
+                            if aCoord.x() == oPoint.x() and aCoord.y() == oPoint.y():
+                                newPoly.append(cPoint)
+                            else:
+                                newPoly.append(aCoord)
+                        newGeom = QgsGeometry.fromPolyline(newPoly)
+                    
+                        changeDone = self.edgeLayer.changeGeometry(qFeature.id(), newGeom)
+                        success = success and changeDone            
+                            
+                aNodeFeatureId = self.findNodeFeature(self.nodeLayer, conFeaturesResult['topoNodeId'])
+
+                self.nodeLayer.beginEditCommand("Topological Geometry Edit Node")
+                            
+                for qFeature in self.nodeLayer.getFeatures(QgsFeatureRequest(aNodeFeatureId)):
+                    newGeom = QgsGeometry.fromPoint(cPoint)
+                    changeDone = self.nodeLayer.changeGeometry(qFeature.id(), newGeom)
                     success = success and changeDone
-                    
-            for qFeature in self.nodeLayer.getFeatures(QgsFeatureRequest(qFeaturesData['nodeFeatureId'])):
-                newGeom = QgsGeometry.fromPoint(cPoint)
-                changeDone = self.nodeLayer.changeGeometry(qFeature.id(), newGeom)
-                success = success and changeDone
-                    
-            if success == False:
-                self.nodeLayer.destroyEditCommand()
-                self.edgeLayer.destroyEditCommand()
-                lineLayer.destroyEditCommand()
+                
+                if success == False:
+                    self.nodeLayer.destroyEditCommand()
+                    self.edgeLayer.destroyEditCommand()
+                    self.insideTopoEdit = False
+                    QgsMessageLog.logMessage( 'adjust coordinates not successfull', 'TopoPlugin', 2)
+                    return
+                
+                self.nodeLayer.endEditCommand()
+                self.edgeLayer.endEditCommand()
                 self.insideTopoEdit = False
-                QgsMessageLog.logMessage( 'adjust coordinates not successfull', 'TopoPlugin', 2)
-                return
-                
-            self.nodeLayer.endEditCommand()
-            self.edgeLayer.endEditCommand()
-            lineLayer.endEditCommand()
-            self.insideTopoEdit = False
                 
             #lineLayer.beginEditCommand("edit")
             #lineLayer.endEditCommand()

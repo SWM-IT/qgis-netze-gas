@@ -107,10 +107,12 @@ class TopologyConnector():
                 # exemplary house connection table - should be retrieved from selected layer
                 cur = conn.cursor()
                 #haTableName = self.layerDbInfo.getFullTableName() # "ga.g_hausanschluss"
-                haTableName = "ga." + self.layerDbInfo.getTable()
+                gTableName = self.layerDbInfo.getTable()
+                fullTableName = "ga." + gTableName
                 reTableName = "gas_topo.relation"
+                lyTableName = "topology.layer"
                 
-                cur.execute("""SELECT f.element_id from """ + haTableName + """ e, """ + reTableName + """ f WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.element_type = 1""")
+                cur.execute("""SELECT f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + lyTableName + """ h WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
                 
                 rows = cur.fetchall()
                 

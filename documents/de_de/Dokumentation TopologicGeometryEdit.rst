@@ -33,7 +33,7 @@ Hier einige Besipiele:
 
     **SELECT AddTopoGeometryColumn('gas_topo', 'ga', 'g_anschlussltg_abschnitt', 'g', 'LINE');**
 
-    **UPDATE ga.g_anschlussltg_abschnitt t SET g = CreateTopoGeom('gas_topo',2, 1,CAST('{{' || (SELECT link_id[3] FROM ga.sw_gis_chain_link where chain_id = (SELECT chain_id FROM ga.sw_gis_chain WHERE rwo_id = t.rwo_id LIMIT 1) LIMIT 1) || ',2}}' AS integer[]));**
+    **UPDATE ga.g_anschlussltg_abschnitt t SET g = CreateTopoGeom('gas_topo',2, 1,CAST(array (SELECT CAST ('{' || k.link_id[3] || ',2}' AS integer[]) FROM ga.sw_gis_chain_link k, ga.sw_gis_chain h where k.chain_id = h.chain_id and h.rwo_id = t.rwo_id ) AS integer[]));**
     
     **SELECT AddTopoGeometryColumn('gas_topo', 'ga', 'g_hausanschluss', 'g', 'POINT');**
 
@@ -45,6 +45,6 @@ Hier einige Besipiele:
     
 	**SELECT AddTopoGeometryColumn('gas_topo', 'ga', 'g_versorgungsltg_abschnitt', 'g', 'LINE');**
 	
-	**UPDATE ga.g_versorgungsltg_abschnitt t SET g = CreateTopoGeom('gas_topo',2, 4,CAST('{{' || (SELECT link_id[3] FROM ga.sw_gis_chain_link where chain_id = (SELECT chain_id FROM ga.sw_gis_chain WHERE rwo_id = t.rwo_id LIMIT 1) LIMIT 1) || ',2}}' AS integer[]));**
+	**UPDATE ga.g_versorgungsltg_abschnitt t SET g = CreateTopoGeom('gas_topo',2, 4,CAST(array (SELECT CAST ('{' || k.link_id[3] || ',2}' AS integer[]) FROM ga.sw_gis_chain_link k, ga.sw_gis_chain h where k.chain_id = h.chain_id and h.rwo_id = t.rwo_id )AS integer[]));**
 	
 	
