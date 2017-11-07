@@ -22,7 +22,7 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL
 from PyQt4.QtGui import QAction, QIcon, QMessageBox
-from qgis.core import QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry, QgsMessageLog
+from qgis.core import QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry, QgsMessageLog, QgsMapLayerRegistry
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
@@ -256,9 +256,10 @@ class TopologicGeometryEdit:
             qFeaturesData = self.findLineFeatures(None, conFeaturesResult['relatedLineIds'])
             qFeaturesList = qFeaturesData['lineFeaturesList']
             
-            for aLayer in iface.mapCanvas().layers():
+            for aLayer in self.iface.mapCanvas().layers():
                 if aLayer.shortName() in qFeaturesList:
-                    aLayer.setSelectedFeatures(qFeaturesList[aLayer.shortName()])
+                    #aLayer.setSelectedFeatures(qFeaturesList[aLayer.shortName()])
+                    aLayer.selectByIds(qFeaturesList[aLayer.shortName()], QgsVectorLayer.AddToSelection )
             
             #drawLayer.setSelectedFeatures(conFeaturesList)
             #dBox = drawLayer.boundingBoxOfSelected()
@@ -266,7 +267,7 @@ class TopologicGeometryEdit:
             #iface.mapCanvas().refreshAllLayers()
             #iface.setActiveLayer(initialLayer)
             #iface.mapCanvas().setSelectionColor( QColor("red") )
-            iface.mapCanvas().refresh()
+            self.iface.mapCanvas().refresh()
             #iface.mapCanvas().setSelectionColor( QColor("yellow") )
         return True
     
@@ -283,7 +284,7 @@ class TopologicGeometryEdit:
         for aTopoLine in topoLines:
             lineLayerName = aTopoLine.getTableName() #'g_anschlussltg_abschnitt'
             lineLayer = None
-            for aLayer in iface.mapCanvas().layers():
+            for aLayer in self.iface.mapCanvas().layers():
                 if aLayer.shortName() == lineLayerName:
                     lineLayer = aLayer
                     if lineLayerName not in qFeaturesList:
@@ -325,7 +326,7 @@ class TopologicGeometryEdit:
                     
     def connectedFeatures(self, aFeature):
         '''
-        returns all Features topological connected to AFeature
+        returns all Features topological connected to aFeature
         '''
         # save start time
         #start = time.time()
@@ -336,19 +337,19 @@ class TopologicGeometryEdit:
             # check different geometry types
             aType = aGeometry.wkbType()
             if aType == QGis.WKBPoint:
-                topoNodeId = self.topologyConnector.get_nodeid_for_point(aFeature)
+                topoNodeData = self.topologyConnector.get_nodeData_for_point(aFeature)
                 #
-                if topoNodeId:
+                if topoNodeData:
                     try:
                         # topoNodeWkt = self.topologyConnector.get_geometry_for_nodeid(topoNodeId) # False! Node could have been moved already so node geometry has to come from the Qgis layer.
-                        connectedEdgeData = self.topologyConnector.all_edges_for_node(topoNodeId)
+                        connectedEdgeData = self.topologyConnector.all_edges_for_node(topoNodeData)
                         connectedEdgeIds = []
                         for aEdgeData in connectedEdgeData:
                             connectedEdgeIds.append(aEdgeData['edgeId'])
-                        relatedLineIds = self.topologyConnector.get_lines_for_edgeids(connectedEdgeIds)
+                        relatedLineIds = self.topologyConnector.get_lines_for_edgeids(connectedEdgeIds, topoNodeData)
                         self.topologyConnector.db_connection_close()
                         
-                        return {'relatedLineIds': relatedLineIds, 'connectedEdgeData': connectedEdgeData, 'topoNodeId': topoNodeId}
+                        return {'relatedLineIds': relatedLineIds, 'connectedEdgeData': connectedEdgeData, 'topoNodeData': topoNodeData}
                     except:
                         # ensure connection to database is closed
                         self.topologyConnector.db_connection_close()
@@ -361,10 +362,10 @@ class TopologicGeometryEdit:
         layerSourceInfo = None
         # set up layer to be used in geometry changes
         if not (self.nodeLayer and self.edgeLayer):
-            for aLayer in iface.legendInterface().layers():
-                if aLayer.name() == 'edge':
+            for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
+                if aLayer.name() == u'edge':
                     self.edgeLayer = aLayer
-                if aLayer.name() == 'node':
+                if aLayer.name() == u'node':
                     self.nodeLayer = aLayer
         
         '''disconnect old listener for topological layer'''
@@ -417,7 +418,8 @@ class TopologicGeometryEdit:
             conFeaturesResult = self.connectedFeatures(self.selectedFeature)
             #oriGeometry = QgsGeometry.fromWkt(conFeaturesResult['topoNodeGeom'])
             #oriGeometry = conFeaturesResult['topoNodeGeom']
-            self.adjustCoordinates(cGeometry, conFeaturesResult)
+            if conFeaturesResult:
+                self.adjustCoordinates(cGeometry, conFeaturesResult)
             
         #self.showTimeMessage('listen_geometryChange', time.time() - start)
     
@@ -441,7 +443,8 @@ class TopologicGeometryEdit:
         '''
         # save start time
         #start = time.time()
-        request = QgsFeatureRequest().setFilterExpression(u'"node_id" = ' + str(conFeaturesResult['topoNodeId']))
+        aTopoNode = conFeaturesResult['topoNodeData']
+        request = QgsFeatureRequest().setFilterExpression(u'"node_id" = ' + str(aTopoNode.getNodeId()))
         request.setSubsetOfAttributes(['geom'], self.nodeLayer.fields())
         qNodeList = []
         for aQsNodeFeature in self.nodeLayer.getFeatures( request ):
@@ -475,7 +478,7 @@ class TopologicGeometryEdit:
                 qLineFeaturesList = qFeaturesData['lineFeaturesList']
                 qEdgeFeaturesList = qFeaturesData['edgeFeaturesList']
                     
-                for lineLayer in iface.mapCanvas().layers():
+                for lineLayer in self.iface.mapCanvas().layers():
                     if lineLayer.shortName() in qLineFeaturesList:
                 
                         if not lineLayer.isEditable():
@@ -519,7 +522,7 @@ class TopologicGeometryEdit:
                         changeDone = self.edgeLayer.changeGeometry(qFeature.id(), newGeom)
                         success = success and changeDone            
                             
-                aNodeFeatureId = self.findNodeFeature(self.nodeLayer, conFeaturesResult['topoNodeId'])
+                aNodeFeatureId = self.findNodeFeature(self.nodeLayer, aTopoNode.getNodeId())
 
                 self.nodeLayer.beginEditCommand("Topological Geometry Edit Node")
                             

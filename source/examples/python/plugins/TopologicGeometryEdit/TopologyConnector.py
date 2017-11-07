@@ -8,6 +8,7 @@ from PyQt4.QtGui import QMessageBox
 from platform import node
 from __builtin__ import str
 from TopoLine import TopoLine
+from TopoPoint import TopoPoint
 
 class TopologyConnector():
     '''
@@ -61,10 +62,11 @@ class TopologyConnector():
         '''
         self.layerDbInfo = aLayerDbInfo
     
-    def all_edges_for_node(self, nodeId):
+    def all_edges_for_node(self, aTopoPoint):
         '''
         returns all connected edges to a node
         '''
+        nodeId = aTopoPoint.getNodeId()
         if nodeId:
             # get db connection
             conn = self.db_connection(None, None, None, None)
@@ -93,7 +95,7 @@ class TopologyConnector():
         returns all connected nodes to an edge
         '''
         
-    def get_nodeid_for_point(self, aPointObject):
+    def get_nodeData_for_point(self, aPointObject):
         '''
         returns the id of the topology node related to the given point object
         '''
@@ -102,7 +104,7 @@ class TopologyConnector():
             # get db connection
             conn = self.db_connection(None, None, None, None)
             if conn:
-                nodeId = None
+                nodeData = None
                 # get db entry for point object
                 # exemplary house connection table - should be retrieved from selected layer
                 cur = conn.cursor()
@@ -110,20 +112,25 @@ class TopologyConnector():
                 gTableName = self.layerDbInfo.getTable()
                 fullTableName = "ga." + gTableName
                 reTableName = "gas_topo.relation"
-                lyTableName = "topology.layer"
+                topoTableName = "topology.layer"
                 
-                cur.execute("""SELECT f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + lyTableName + """ h WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
+                cur.execute("""SELECT h.topology_id, h.schema_name, h.table_name, f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + topoTableName + """ h WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
                 
                 rows = cur.fetchall()
                 
                 # should be only one
                 if len(rows) > 0:
-                    nodeId = rows[0][0]
-                    
+                    row = rows[0]
+                    aTopoPoint = TopoPoint()
+                    aTopoPoint.setTopologyId(row[0])
+                    aTopoPoint.setSchemaName(row[1])
+                    aTopoPoint.setTableName(row[2])
+                    aTopoPoint.setNodeId(row[3])
+                    nodeData = aTopoPoint
                 # close connection
                 #self.db_connection_close()
                 
-                return nodeId
+                return nodeData
         
     def get_edgeid_for_line(self, aLineObject):
         '''
@@ -135,7 +142,7 @@ class TopologyConnector():
         returns the point object related to the given node id
         '''
         
-    def get_lines_for_edgeids(self, edgeIds):
+    def get_lines_for_edgeids(self, edgeIds, topoNodeData):
         '''
         returns the line objects related to the given edge ids
         '''
@@ -145,10 +152,10 @@ class TopologyConnector():
                 lineIds = []
                 lineData = []
                 cur = conn.cursor()
-                topoId = 3 # FIXME: is this defined in the topogeometry?
+                topoId = topoNodeData.getTopologyId() #1 
                 reTableName = "gas_topo.relation"
                 topoTableName = "topology.layer"
-                cur.execute("""SELECT e.topogeo_id, h.schema_name, h.table_name, e.element_id from """ + reTableName + """ e, """ + topoTableName + """ h WHERE e.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND h.topology_id = """ + str(topoId) + """ AND h.layer_id = e.layer_id""")
+                cur.execute("""SELECT f.topogeo_id, h.schema_name, h.table_name, f.element_id from """ + reTableName + """ f, """ + topoTableName + """ h WHERE f.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND h.topology_id = """ + str(topoId) + """ AND h.layer_id = f.layer_id""")
                 rows = cur.fetchall()
                 
                 for row in rows:
