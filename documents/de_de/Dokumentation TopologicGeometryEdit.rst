@@ -16,7 +16,7 @@ Um Topologie in QGIS nutzbar zu machen, müssen folgende **Datenbankerweiterungen
 Diese können im Kontextmenu der Datenbank hinzugefügt werden:
  .. image:: images/topology_extensions.png
 
-Per `SQL-Skript <../source/SQL/Script_create_topology_entries.sql>`_ können dann die Topologie-Tabellen über eine bereitgestellte Funktion in einem neuen Schema erzeugt und gefüllt werden.
+Per `SQL-Skript <../../source/SQL/Script_create_topology_entries.sql>`_ können dann die Topologie-Tabellen über eine bereitgestellte Funktion in einem neuen Schema erzeugt und gefüllt werden.
 
 Hinzufügen der Topologie-Layer im QGis
 --------------------------------------
