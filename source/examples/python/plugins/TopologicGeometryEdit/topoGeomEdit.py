@@ -251,29 +251,79 @@ class TopologicGeometryEdit:
         
         if selected:
             aFeature = selected[0]
-            #initialLayer = iface.mapCanvas().currentLayer()
-            conFeaturesResult = self.connectedFeatures(aFeature)
-            qFeaturesData = self.findLineFeatures(None, conFeaturesResult['relatedLineIds'])
-            qFeaturesList = qFeaturesData['lineFeaturesList']
+            qFeaturesList = []
             
-            for aLayer in self.iface.mapCanvas().layers():
-                if aLayer.shortName() in qFeaturesList:
-                    #aLayer.setSelectedFeatures(qFeaturesList[aLayer.shortName()])
-                    aLayer.selectByIds(qFeaturesList[aLayer.shortName()], QgsVectorLayer.AddToSelection )
+            if aFeature:
+                aGeometry = aFeature.geometry()
             
-            #drawLayer.setSelectedFeatures(conFeaturesList)
-            #dBox = drawLayer.boundingBoxOfSelected()
-            #iface.mapCanvas().setExtent(dBox)
-            #iface.mapCanvas().refreshAllLayers()
-            #iface.setActiveLayer(initialLayer)
-            #iface.mapCanvas().setSelectionColor( QColor("red") )
-            self.iface.mapCanvas().refresh()
-            #iface.mapCanvas().setSelectionColor( QColor("yellow") )
+                # check different geometry types
+                aType = aGeometry.wkbType()
+                if aType == QGis.WKBPoint:
+                    #initialLayer = iface.mapCanvas().currentLayer()
+                    conFeaturesResult = self.connectedLineFeatures(aFeature)
+                    if conFeaturesResult:
+                        qFeaturesData = self.findLineFeatures(None, conFeaturesResult['relatedLineIds'])
+                        qFeaturesList = qFeaturesData['lineFeaturesList']
+                    
+                if aType == QGis.WKBLineString:
+                    conFeaturesResult = self.connectedPointFeatures(aFeature)
+                    if conFeaturesResult:
+                        qFeaturesData = self.findPointFeatures(None, conFeaturesResult['relatedPointIds'])
+                        qFeaturesList = qFeaturesData['pointFeaturesList']
+            
+            if len(qFeaturesList) > 0:
+                for aLayer in self.iface.mapCanvas().layers():
+                    if aLayer.shortName() in qFeaturesList:
+                        #aLayer.setSelectedFeatures(qFeaturesList[aLayer.shortName()])
+                        aLayer.selectByIds(qFeaturesList[aLayer.shortName()], QgsVectorLayer.AddToSelection )
+            
+                #drawLayer.setSelectedFeatures(conFeaturesList)
+                #dBox = drawLayer.boundingBoxOfSelected()
+                #iface.mapCanvas().setExtent(dBox)
+                #iface.mapCanvas().refreshAllLayers()
+                #iface.setActiveLayer(initialLayer)
+                #iface.mapCanvas().setSelectionColor( QColor("red") )
+                self.iface.mapCanvas().refresh()
+                #iface.mapCanvas().setSelectionColor( QColor("yellow") )
         return True
+    
+    def findPointFeatures(self, aNodeLayer, topoPoints):
+        '''
+        identifies a list of point features on aNodeLayer by a list of ids
+        '''
+        # save start time
+        start = time.time()
+        
+        qFeaturesList = {}
+        qNodeFeaturesList = []
+        
+        for aTopoPoint in topoPoints:
+            pointLayerName = aTopoPoint.getTableName()
+            pointLayer = None
+            for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
+                if aLayer.shortName() == pointLayerName:
+                    pointLayer = aLayer
+                    if pointLayerName not in qFeaturesList:
+                        qFeaturesList[pointLayerName] = []
+                    break
+            if pointLayer:
+                request = QgsFeatureRequest().setFilterExpression(u'"system_id" = ' + str(aTopoPoint.getSystemId()))
+                request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], pointLayer.fields())
+                for aQsFeature in pointLayer.getFeatures( request ):
+                    if aQsFeature.id() not in qFeaturesList[pointLayerName]:
+                        qFeaturesList[pointLayerName].append(aQsFeature.id())
+            if aNodeLayer:
+                request = QgsFeatureRequest().setFilterExpression(u'"node_id" = ' + str(aTopoPoint.getNodeId()))
+                request.setFlags(QgsFeatureRequest.NoGeometry).setSubsetOfAttributes(['id'], aNodeLayer.fields())
+                for aQsNodeFeature in aNodeLayer.getFeatures( request ):
+                    qNodeFeaturesList.append(aQsNodeFeature.id())
+        
+        self.showTimeMessage('findPointFeatures', time.time() - start)        
+        return {'pointFeaturesList': qFeaturesList, 'nodeFeaturesList': qNodeFeaturesList}
     
     def findLineFeatures(self, aEdgeLayer, topoLines):
         '''
-        identifies aList of line features on aLayer by a list of ids
+        identifies a list of line features on aEdgeLayer by a list of ids
         '''
         # save start time
         start = time.time()
@@ -324,7 +374,7 @@ class TopologicGeometryEdit:
                 
         return qNodeFeatureId 
                     
-    def connectedFeatures(self, aFeature):
+    def connectedLineFeatures(self, aFeature):
         '''
         returns all Features topological connected to aFeature
         '''
@@ -332,29 +382,45 @@ class TopologicGeometryEdit:
         #start = time.time()
         
         if aFeature:
-            aGeometry = aFeature.geometry()
-        
-            # check different geometry types
-            aType = aGeometry.wkbType()
-            if aType == QGis.WKBPoint:
-                topoNodeData = self.topologyConnector.get_nodeData_for_point(aFeature)
-                #
-                if topoNodeData:
-                    try:
-                        # topoNodeWkt = self.topologyConnector.get_geometry_for_nodeid(topoNodeId) # False! Node could have been moved already so node geometry has to come from the Qgis layer.
-                        connectedEdgeData = self.topologyConnector.all_edges_for_node(topoNodeData)
-                        connectedEdgeIds = []
-                        for aEdgeData in connectedEdgeData:
-                            connectedEdgeIds.append(aEdgeData['edgeId'])
-                        relatedLineIds = self.topologyConnector.get_lines_for_edgeids(connectedEdgeIds, topoNodeData)
-                        self.topologyConnector.db_connection_close()
-                        
-                        return {'relatedLineIds': relatedLineIds, 'connectedEdgeData': connectedEdgeData, 'topoNodeData': topoNodeData}
-                    except:
-                        # ensure connection to database is closed
-                        self.topologyConnector.db_connection_close()
-         
-        #self.showTimeMessage('connectedFeatures', time.time() - start)                
+            topoNodeData = self.topologyConnector.get_nodeData_for_point(aFeature)
+            #
+            if topoNodeData:
+                try:
+                    # topoNodeWkt = self.topologyConnector.get_geometry_for_nodeid(topoNodeId) # False! Node could have been moved already so node geometry has to come from the Qgis layer.
+                    connectedEdgeData = self.topologyConnector.all_edges_for_node(topoNodeData)
+                    connectedEdgeIds = []
+                    for aEdgeData in connectedEdgeData:
+                        connectedEdgeIds.append(aEdgeData['edgeId'])
+                    relatedLineIds = self.topologyConnector.get_lines_for_edgeids(connectedEdgeIds, topoNodeData)
+                    self.topologyConnector.db_connection_close()
+                    
+                    return {'relatedLineIds': relatedLineIds, 'connectedEdgeData': connectedEdgeData, 'topoNodeData': topoNodeData}
+                except:
+                    # ensure connection to database is closed
+                    self.topologyConnector.db_connection_close()
+                    
+        #self.showTimeMessage('connectedLineFeatures', time.time() - start)
+            
+    def connectedPointFeatures(self, aFeature):
+        '''
+        returns all Point Features topological connected to aFeature
+        '''
+        if aFeature:
+            topoEdgeData = self.topologyConnector.get_edgeData_for_line(aFeature) 
+                
+            if topoEdgeData:
+                try:
+                    connectedNodeData = self.topologyConnector.all_nodes_for_edges(topoEdgeData)
+                    connectedNodeIds = []
+                    for aNodeData in connectedNodeData:
+                        connectedNodeIds.append(aNodeData['nodeId'])
+                    relatedPointIds = self.topologyConnector.get_points_for_nodeids(connectedNodeIds, topoEdgeData)
+                    self.topologyConnector.db_connection_close()
+                    
+                    return {'relatedPointIds': relatedPointIds, 'connectedNodeData': connectedNodeData, 'topoEdgeData': topoEdgeData}
+                except:
+                    # ensure connection to database is closed
+                    self.topologyConnector.db_connection_close()                
             
     def listen_layerChanged(self, layer):
         # listens to change of current layer
@@ -414,12 +480,15 @@ class TopologicGeometryEdit:
         if aSelectedFeature:
             self.selectedFeature = aSelectedFeature
             #QMessageBox.information(None, toolname, "Geometry was changed for " + str(self.selectedFeature.id()))
-            #aGeometry = self.selectedFeature.geometry() # not the original geometry but the already changed one!
-            conFeaturesResult = self.connectedFeatures(self.selectedFeature)
-            #oriGeometry = QgsGeometry.fromWkt(conFeaturesResult['topoNodeGeom'])
-            #oriGeometry = conFeaturesResult['topoNodeGeom']
-            if conFeaturesResult:
-                self.adjustCoordinates(cGeometry, conFeaturesResult)
+            aGeometry = self.selectedFeature.geometry() # not the original geometry but the already changed one!
+            
+            aType = aGeometry.wkbType()
+            if aType == QGis.WKBPoint:
+                conFeaturesResult = self.connectedLineFeatures(self.selectedFeature)
+                #oriGeometry = QgsGeometry.fromWkt(conFeaturesResult['topoNodeGeom'])
+                #oriGeometry = conFeaturesResult['topoNodeGeom']
+                if conFeaturesResult:
+                    self.adjustCoordinates(cGeometry, conFeaturesResult)
             
         #self.showTimeMessage('listen_geometryChange', time.time() - start)
     
@@ -477,7 +546,7 @@ class TopologicGeometryEdit:
                 qFeaturesData = self.findLineFeatures(self.edgeLayer, conFeaturesList)
                 qLineFeaturesList = qFeaturesData['lineFeaturesList']
                 qEdgeFeaturesList = qFeaturesData['edgeFeaturesList']
-                    
+                
                 for lineLayer in self.iface.mapCanvas().layers():
                     if lineLayer.shortName() in qLineFeaturesList:
                 
