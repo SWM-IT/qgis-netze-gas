@@ -263,7 +263,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         if changedLayes:
             QMessageBox.warning(config.iface.mainWindow(), 'Cannot change branch',
-                "One o more layers have local changes that would be overwritten. "
+                "One or more layers have local changes that would be overwritten. "
                 "Either sync the branch or revert local changes "
                 "before changing commit.",
                 QMessageBox.Ok) 
@@ -313,7 +313,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     def pullMasterToCurrentBranch(self):
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
+        # Do the merge on server side
         self.mergeInto(currentBranchName, self.MasterBranchName)
+        # Fetch the new situation from server
+        layers = self.layersInBranch(repo, currentBranchName)
+        self.syncLayers(layers, currentBranchName, "")
     
     def pushCurrentBranchToMaster(self):
         repo = self.getCurrentRepo()
@@ -498,6 +502,10 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             commitId = getCommitId(layer)
             headCommitId = repo.revparse(branchName)
             applyLayerChanges(repo, layer, commitId, headCommitId)
+         
+        # Make changes visible in the map.   
+        layer.reload()
+        layer.triggerRepaint()
         
         
     def prepareSync(self, nbLayers):
@@ -537,12 +545,21 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         for layer in layers:
             self.progressMessageBar.setText("Moving to branch {0}. Layer: {1}".format(branchName, layer.name()))
             
-            tracking = getTrackingInfo(layer)
-            repo.checkoutlayer(tracking.geopkg, layer.name(), None, branchName)
-            layer.reload()
-            layer.triggerRepaint()
-            repoWatcher.layerUpdated.emit(layer)
-            repoWatcher.repoChanged.emit(repo)
+            currentCommitId = getCommitId(layer)
+            newCommitId     = repo.revparse(branchName)
+            
+            # Only if the current commit ID in the current geo package differs from the commit ID of the 
+            # branches head, I need to do something 
+            if currentCommitId <> newCommitId:
+                tracking = getTrackingInfo(layer)
+                # I use applyLayerChanges instead of checkoutlayer, because that is faster, as only 
+                # differences are transferred and not the whole geo packages.
+                applyLayerChanges(repo, layer, currentCommitId, newCommitId, clearAudit = True)
+                layer.reload()
+                layer.triggerRepaint()
+                # This takes ages, so I comment it out. Is it needed anywhere?
+                #repoWatcher.layerUpdated.emit(layer)
+                repoWatcher.repoChanged.emit(repo)
 
             i += 1
             self.progressBar.setValue(i)
