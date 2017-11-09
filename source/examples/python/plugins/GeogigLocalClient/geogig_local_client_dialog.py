@@ -53,7 +53,7 @@ from geogig import config
 from geogig.geogigwebapi import repository
 from geogig.repowatcher import repoWatcher
 from geogig.geogigwebapi.repository import Repository
-from geogig.tools.layertracking import getTrackingInfo
+from geogig.tools.layertracking import (getTrackingInfo, isRepoLayer)
 from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
 from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeItem 
@@ -402,16 +402,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             return False, None
         
     def layersInBranch(self, repo, branchName):
-        layerNames = repo.trees(branchName)
+        """I return all layers that are opened by QGIS and that belong to the repository"""
         allLayers  = iface.legendInterface().layers()
+        repoLayers = repo.trees()
         
-        # FIXME: The criterion storageType() == "GPKG" is not enough!
-        # I should actually test, if that layer is managed via GeoGig!
-        layers = []
-        for layer in allLayers:
-            if layer.name() in layerNames and layer.storageType() == "GPKG":
-                layers.append(layer)
-                
+        layers = [layer for layer in allLayers if isRepoLayer(layer) and layer.name() in repoLayers]                
         return layers
         
         
