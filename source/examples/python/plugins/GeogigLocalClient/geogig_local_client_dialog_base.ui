@@ -55,13 +55,24 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QComboBox" name="cbbServers"/>
+           <widget class="QComboBox" name="cbbServers">
+            <property name="toolTip">
+             <string>Select server</string>
+            </property>
+           </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="cbbRepos"/>
+           <widget class="QComboBox" name="cbbRepos">
+            <property name="toolTip">
+             <string>Select repository</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QToolButton" name="tbPull">
+            <property name="toolTip">
+             <string>Pull</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -69,6 +80,9 @@
           </item>
           <item>
            <widget class="QToolButton" name="tbPush">
+            <property name="toolTip">
+             <string>Push</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -76,6 +90,9 @@
           </item>
           <item>
            <widget class="QToolButton" name="tbSync">
+            <property name="toolTip">
+             <string>Sync</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -93,6 +110,9 @@
        <enum>Qt::Vertical</enum>
       </property>
       <widget class="QTreeWidget" name="branchesList">
+       <property name="toolTip">
+        <string>Branch tree</string>
+       </property>
        <attribute name="headerVisible">
         <bool>false</bool>
        </attribute>
@@ -103,6 +123,9 @@
        </column>
       </widget>
       <widget class="QTreeWidget" name="commitsList">
+       <property name="toolTip">
+        <string>List of commits</string>
+       </property>
        <attribute name="headerVisible">
         <bool>false</bool>
        </attribute>
