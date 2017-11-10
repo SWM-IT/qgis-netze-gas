@@ -67,8 +67,14 @@ class TopologyConnector():
         '''
         returns the geometry of a topo node with the given nodeId
         '''
+        
+        '''
         print("IN setTopoGeometryData")
         print(systemId)
+        
+        print("Table Name")
+        print(TableName)
+        '''
         
         if systemId:
                                        
@@ -88,7 +94,7 @@ class TopologyConnector():
         insert relation entry between layer table and node or edge table
         '''
         
-        print("IN createRelationTableEntry")
+        #print("IN createRelationTableEntry")
         
         schema = "gas_topo" 
         geomTableName = "relation"         
@@ -109,12 +115,13 @@ class TopologyConnector():
             
             cur = conn.cursor() 
             
+            '''
             print("---------")
             print(topoGeomId)
             print(layer_id)
             print(fid)
             print(element_type)
-            
+            '''
             #cur.execute("INSERT INTO " + schema + "." + str(geomTableName) + " (topogeo_id, layer_id, element_id, element_type) VALUES ('" + str(topology_id) + "', '" + str(layer_id) + "', '" + str(fid) + "', '" + str(element_type) + "' ) ")
                       
             cur.execute("INSERT INTO gas_topo.relation VALUES ('" + str(topoGeomId) + "', '" + str(layer_id) + "', '" + str(fid) + "', '" + str(element_type) + "' ) ")
@@ -146,8 +153,7 @@ class TopologyConnector():
             
             self.db_connection_close() 
                 
-            print("UPDATE TUPLE !!")
-            
+            #print("UPDATE TUPLE !!")
             
             
     def getNextTopoGeomIdAndProperties(self, TableName):
@@ -170,6 +176,5 @@ class TopologyConnector():
                 return False
             else:
                 return row  
-            
             
                 

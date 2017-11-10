@@ -20,10 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL, pyqtSlot
 from PyQt4.QtGui import QAction, QIcon, QMessageBox
-#from qgis.core import QgsMapLayerRegistry, QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry, QgsMessageLog
-from qgis.core import *
+from qgis.core import QgsMapLayerRegistry, QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry, QgsMessageLog
+#from qgis.core import *
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
@@ -88,13 +88,22 @@ class TopologicGeometryAdd:
         # set db connector for topology tests
         self.topologyConnector = TopologyConnector()
         
-        self.commitedChanges = False # store information if geomLayers are set      
+        self.commitedChanges = False # store information if geomLayers are set  
+        self.lastModifiedLayer = False    
         
         self.qgisLayerInformation = []
         self.postgresLayerInformation = []
         
-        # start method for listening signal
-        self.listenSignals()
+        # start method for listening signals
+        #self.listenSignals(None)
+                
+        currentLayer = self.iface.mapCanvas().currentLayer()
+        if currentLayer:
+            self.listenLayerChanged(currentLayer)                 
+                
+        # set signal for layerchanged
+        QObject.connect(self.iface.mapCanvas(), SIGNAL("currentLayerChanged(QgsMapLayer *)"), self.listenLayerChanged)
+        
         
         print("RELOAD PLUGIN")
 
@@ -200,7 +209,7 @@ class TopologicGeometryAdd:
         self.add_action(
             icon_path,
             text=self.tr(u'Add Topologic Geometry'),
-            callback=self.checkSelectedLayer,
+            callback=self.checkIfLayerSelected,
             parent=self.iface.mainWindow())
         
                 
@@ -214,89 +223,109 @@ class TopologicGeometryAdd:
         # remove the toolbar
         del self.toolbar     
               
-        
-    def listenSignals(self):
-        '''
-        set signals for listening
-        '''
+    '''
+    def listenSignals(self, layer):
+       
         #print("IN LISTEN SIGNALS")
         
-        # check if already a layer is selected on Plugin Load (probably only during testing) 
-        currentLayer = self.iface.mapCanvas().currentLayer()     
+        # check if already a layer is selected on Plugin Load (probably only during testing)         
+        if self.selectedLayer:            
+            
+            #print("Überschreibe Layer")
+            self.selectedLayer = layer              
+            
+        else:
+            #print("Setze Layer neu")
+            self.selectedLayer = self.iface.mapCanvas().currentLayer()
+            
         
-        if currentLayer:  
+        if self.selectedLayer:  
+            
+            self.selectedLayer.featureAdded.connect(self.listenLayer)            
+            self.selectedLayer.beforeCommitChanges.connect(self.commitChanges) 
+    '''  
+        
+        
+    def listenLayerChanged(self, currentLayer):
+        '''
+        listen signal if layer changed
+        '''
+        
+        #print("-------------------------")
+        print("IN LISTEN LAYER CHANGED")
+        
+        if not (self.nodeLayer and self.edgeLayer):
+            for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
+                if aLayer.name() == u'edge':
+                    self.edgeLayer = aLayer
+                if aLayer.name() == u'node':
+                    self.nodeLayer = aLayer
+        
+        
+        # evtl. muss man auf die beendete Bearbeitung eines Layer reagieren
+        '''
+        if self.lastModifiedLayer:
+            
+            if self.lastModifiedLayer.isModified() == False:
+            
+                self.commitedChanges = False 
+            
+                #print("letzter Modifizierter Layer")
+                #print(self.lastModifiedLayer.name())
+        '''
+        
+        #print("--------")
+        if currentLayer and currentLayer.shortName():
+            
+            #print("DER CURRENT LAYER")
+            #print(currentLayer.name())
+            
             ''' set Signals '''
             currentLayer.featureAdded.connect(self.listenLayer)            
             currentLayer.beforeCommitChanges.connect(self.commitChanges) 
             
-            currentLayer.layerModified.connect(self.listen_layerModified)
+            currentLayer.editingStopped.connect(self.editingStopped)
+            currentLayer.featuresDeleted.connect(self.featuresDeleted)
             
-            currentLayer.committedFeaturesAdded.connect( self.logCommittedFeaturesAdded )  
-               
-        QObject.connect(self.iface.mapCanvas(), SIGNAL("currentLayerChanged(QgsMapLayer *)"), self.listenLayerChanged)
-             
-        # TEST SIGNALS
-        #QgsMapLayerRegistry.instance().layersWillBeRemoved.connect(self.willBeRemoveLayers)
-        #QgsMapLayerRegistry.instance().layersRemoved.connect(self.removeLayers)    
-      
+        
+        # disconnect signals 
+        if self.selectedLayer and self.selectedLayer.shortName() :                
+            '''disconnect signals'''  
             
-        #QObject.connect(self.iface.mapCanvas(), SIGNAL("currentLayerChanged(QgsMapLayer *)"), self.listen_layerChanged)
-         
-        #QgsMapLayerRegistry.instance().legendLayersAdded.connect(self.LayerAdded())
-        
-    def logCommittedFeaturesAdded( layerId, addedFeatures ):
-        message = layerId + " has features added: "
-        for feature in addedFeatures:
-            message += str( feature.id() ) + ", "
+            #print("DER SELECTED LAYER")
+            #print(self.selectedLayer.name()) 
+                  
+            self.selectedLayer.featureAdded.disconnect()    
+            self.selectedLayer.beforeCommitChanges.disconnect()    
             
-            print message
-            #QgsMessageLog.logMessage( message )
-            #QApplication.beep()     
-        
-    def listenLayerChanged(self, layer):
-        
-        print("IN LISTEN LAYER CHANGED")
-        
-        # set selected layer
-        self.selectedLayer = layer
-        
-        
-    def listen_layerModified(self):        
-        
-        #layer = iface.activeLayer()
-        print("IN LISTEN LAYER MODIFIED")
-        #print(layer)
-        #print("MODIFIED")
-        #print(layer.isModified())
-        
-        #QMessageBox.information(None,"Info!","Layer ADDED")
-        
-    def LayerAdded(self):
-    
-        #print( layerids)
-        QMessageBox.information(None,"Info!","Layer ADDED")
-        
+            self.selectedLayer.editingStopped.disconnect()
+            self.selectedLayer.featuresDeleted.disconnect() 
             
-    def removeLayers(self, layerids):
+        # store new selected layer
+        self.selectedLayer = currentLayer 
+          
+        # set new signal on selected layer     
+        #self.listenSignals(layer)
         
-        print( layerids)
-        QMessageBox.information(None,"Info!","IN removeLayers")
+    def featuresDeleted(self,fid):
         
-        # layernamen rausfinden
-        #lyr = QgsMapLayerRegistry.instance().mapLayer(lyr_id)  # returns QgsMapLayer pointer
-        #lyr_name = lyr.name()  # or .originalName()
+        print("IN featuresDeleted sIGANL ")
+        #print("FID")
+        #print(fid)
         
-    def willBeRemoveLayers(self, layerids):
         
-        print( layerids)
-        QMessageBox.information(None,"Info!","IN willBeRemoveLayers")
+    def editingStopped(self):
         
-        # layernamen rausfinden
-        #lyr = QgsMapLayerRegistry.instance().mapLayer(lyr_id)  # returns QgsMapLayer pointer
-        #lyr_name = lyr.name()  # or .originalName()        
-                    
+        print("IN editingStopped sIGANL ")
         
-    def checkForSelectedLayer(self):   
+        print(len(self.postgresLayerInformation))
+        for i in self.postgresLayerInformation:
+            print(i['fid'])
+        
+        #self.commitedChanges = False 
+                       
+        
+    def checkIfLayerSelected(self):   
         '''
         check if a layer is selected
         '''        
@@ -336,50 +365,44 @@ class TopologicGeometryAdd:
         '''
         callback for Signal addedFeature
         '''
-        
-        print("IN LISTEN LAYER")
-        
-        self.currentLayer = self.iface.mapCanvas().currentLayer()       
                     
         # fetch not commited features
         if fid < 0:
             #self.qgisLayerFIDS.append(fid)
-            self.qgisLayerInformation.append({'fid': fid, 'layername': self.currentLayer.name(), 'shortname': self.currentLayer.shortName()})
-        else:
+            self.qgisLayerInformation.append({'fid': fid, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName()})
+        else: 
             # commited features            
-            self.postgresLayerInformation.append({'fid': fid, 'layername': self.currentLayer.name(), 'shortname': self.currentLayer.shortName()})
+            self.postgresLayerInformation.append({'fid': fid, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName()})
         
         
         # after my geom Layers commited
-        if self.commitedChanges == True:
+        if self.commitedChanges == True: #and len(self.postgresLayerInformation > 0):
             
-            self.updateInsertFeatureInformations()     
+            self.updateInsertGeomTopoInformations()     
             
             # clear array 
             self.postgresLayerInformation = []
-            
-            #self.activeLayer.featureAdded.disconnect()     
                    
         
-    def updateInsertFeatureInformations(self):
+    def updateInsertGeomTopoInformations(self):
         '''
         insert necessary entrys in postgres DB eg. relations, generating topogeomId etc.
         '''
                 
-        print("IN updateInsertFeatureInformations")
+        ##print("IN updateInsertFeatureInformations")
         
-        for i in self.postgresLayerInformation:            
-                        
+        for i in self.postgresLayerInformation:
+            
+            shortname = i['shortname']      
+            featureID = i['fid']  
+            
             # set Flag
             geomLayerProperties = False
-            
+                        
             # get right qgis layer for selection of featureId            
             for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
                 if aLayer.name() == i['layername']:
                     featureLayer = aLayer 
-              
-            shortname = i['shortname']      
-            featureID = i['fid']      
             
             iterator = featureLayer.getFeatures(QgsFeatureRequest().setFilterFid(featureID))
             try:
@@ -410,7 +433,11 @@ class TopologicGeometryAdd:
                     return 
                 
                 # set topo geom data entrys on tables
-                self.topologyConnector.setTopoGeometryData(systemId, shortname, geomLayerProperties)                
+                self.topologyConnector.setTopoGeometryData(systemId, shortname, geomLayerProperties)  
+                
+                # store my last modifiedLayer                
+                self.lastModifiedLayer = featureLayer
+                                 
                 
             except StopIteration:
                 print("Fehler")
@@ -430,16 +457,26 @@ class TopologicGeometryAdd:
         set geomLayers for each layer
         '''
     
-        print("in setGeomLayers")   
+        #print("in addGeomLayers")   
         
         self.geomLayerInformation = []
     
         # gehe über die FIDS des aktiven Layer, später für alle Layer machen       
         for i in self.qgisLayerInformation:   
             
-            featureID = i['fid'] 
+            # FIX ME
+            # signal commit changes only geomlayers generated for selectedLayer
+            if self.selectedLayer.name() != i['layername']:
+                continue 
             
-            iterator = self.currentLayer.getFeatures(QgsFeatureRequest().setFilterFid(featureID))
+            featureID = i['fid']             
+            
+            # get right qgis layer            
+            for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
+                if aLayer.name() == i['layername']:
+                    featureLayer = aLayer 
+            
+            iterator = featureLayer.getFeatures(QgsFeatureRequest().setFilterFid(featureID))
             try:                
                 feature = next(iterator)
                             
@@ -450,29 +487,30 @@ class TopologicGeometryAdd:
                     # set geomLayer
                     geom_type = "node"
                     self.geomLayer = self.nodeLayer
-                    print "Point: " + str(a_geom)
+                    #print "Point: " + str(a_geom)
                 elif geom.type() == QGis.Line:
                     a_geom = geom.asPolyline()
                     # set geomLayer
                     geom_type = "edge"
                     self.geomLayer = self.edgeLayer
-                    print "Line: %d points" % len(a_geom)
+                    #print "Line: %d points" % len(a_geom)
                 elif geom.type() == QGis.Polygon:
                     a_geom = geom.asPolygon()
                     numPts = 0
                     for ring in x:
                         numPts += len(ring)
-                    print "Polygon: %d rings with %d points" % (len(a_geom), numPts)
+                    #print "Polygon: %d rings with %d points" % (len(a_geom), numPts)
                 else:
-                    print "Unknown"   
+                    print "Unknown" 
             
                 # set Feature for geomLayer
                 feat = QgsFeature(self.geomLayer.pendingFields())
                 #feat.setAttributes(['node_id', nextval('gas_topo.node_node_id_seq'::regclass)])
-                #feat.setAttributes(['containing_face', 111111111]) # vl. Feature ID vom aktiv Layer reinschreiben
+                #feat.setAttributes(['containing_face', 111111111]) # vl. Feature ID vom aktiv Layer reinschreiben                
+                #feat.setGeometry(QgsGeometry.fromPoint(QgsPoint(4464012.2,5335163.8)))
             
                 feat.setGeometry(QgsGeometry.fromPoint(a_geom))
-                (res, outFeats) = self.geomLayer.dataProvider().addFeatures([feat])
+                (result, outFeats) = self.geomLayer.dataProvider().addFeatures([feat])
             
                 # store fid from geom layer
                 self.geomFid = outFeats[0].id()
@@ -481,7 +519,7 @@ class TopologicGeometryAdd:
                 self.geomLayerInformation.append({'fid': self.geomFid, 'geom': a_geom, 'geom_type': geom_type, 'layername': self.geomLayer.name()})
         
                 # commit to stop editing the layer
-                #self.geomLayer.commitChanges()
+                self.geomLayer.commitChanges()
             
                 # update layer's extent when new features have been added
                 # because change of extent in provider is not propagated to the layer
@@ -489,37 +527,18 @@ class TopologicGeometryAdd:
         
                 # add layer to the legend
                 QgsMapLayerRegistry.instance().addMapLayer(self.geomLayer)
-        
-                if res == False:
-                    self.geomLayer.destroyEditCommand()
-                    
-                if res == True:
-                    print("GEOM LAYER Gesetzt")               
-             
+                
+                '''                  
+                if result == True:
+                    print("GEOM LAYER Gesetzt")  
+                '''    
             
             except StopIteration:
                 print("FEHLER beim setzen des Geom Layer")
                 
             # set flag
             self.commitedChanges = True
-            
 
-    def checkSelectedLayer(self):        
-        '''
-        check if a layer is selected an store node and edge layers
-        '''        
-        
-        if not (self.nodeLayer and self.edgeLayer):
-            for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
-                if aLayer.name() == u'edge':
-                    self.edgeLayer = aLayer
-                if aLayer.name() == u'node':
-                    self.nodeLayer = aLayer
-                
-                
-        # check if a layer is selected
-        self.checkForSelectedLayer()       
-   
             
     def run(self):
         """Run method that performs all the real work"""
