@@ -90,6 +90,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.tbSync.setIcon(icon("sync_16.png"))
         self.tbPull.setIcon(icon("pull_16.png"))
         self.tbPush.setIcon(icon("push_16.png"))
+        self.tbRevertLocalChanges.setIcon(icon("undo_16.png"))
+        self.tbShowLocalChanges.setIcon(icon("show_16.png"))
+        
         self.cbbServers.currentIndexChanged.connect(self.fillReposCombo)
         self.cbbRepos.currentIndexChanged.connect(self.fillBranchesList)
         
