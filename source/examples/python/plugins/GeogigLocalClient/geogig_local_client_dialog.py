@@ -99,9 +99,14 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.tbSync.clicked.connect(self.syncSelectedBranch)
         self.tbPull.clicked.connect(self.pullMasterToCurrentBranch)
         self.tbPush.clicked.connect(self.pushCurrentBranchToMaster)
+        self.tbRevertLocalChanges.clicked.connect(self.revertLocalChanges)
+        self.tbShowLocalChanges.clicked.connect(self.showLocalChanges)
         
+        self.tbSync.setEnabled(False)
         self.tbPull.setEnabled(False)
         self.tbPush.setEnabled(False)
+        self.tbRevertLocalChanges.setEnabled(False)
+        self.tbShowLocalChanges.setEnabled(False)
         
         self.branchesList.setContextMenuPolicy(Qt.CustomContextMenu)
         self.branchesList.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -189,11 +194,17 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def currentBranchChanged(self, currentBranchName):
         if not currentBranchName or currentBranchName == "" or currentBranchName == self.MasterBranchName:
+            self.tbSync.setEnabled(False)
             self.tbPull.setEnabled(False)
             self.tbPush.setEnabled(False)
+            self.tbRevertLocalChanges.setEnabled(False)
+            self.tbShowLocalChanges.setEnabled(False)
         else:
+            self.tbSync.setEnabled(True)
             self.tbPull.setEnabled(True)
-            self.tbPush.setEnabled(True)          
+            self.tbPush.setEnabled(True)
+            self.tbRevertLocalChanges.setEnabled(True)
+            self.tbShowLocalChanges.setEnabled(True)                      
     
     def branchSelected(self):
         self.commitsList.clear()
@@ -349,6 +360,28 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
         self.mergeInto(self.MasterBranchName, currentBranchName)
+        
+    def revertLocalChanges(self):
+        repo = self.getCurrentRepo()
+        currentBranchName = self.getCurrentBranchName(repo)
+        layers = self.layersInBranch(repo, currentBranchName)
+        
+        changedLayes = self.getChangedLayersOf(layers) 
+        
+        if not changedLayes:
+            QMessageBox.warning(config.iface.mainWindow(), 'No local changes',
+                "There are no local changes that could be reverted",
+                QMessageBox.Ok)
+        else:
+            ret = QMessageBox.warning(config.iface.mainWindow(), 'Want revert?',
+                "Are you sure to revert all local changes?",
+                QMessageBox.Ok | QMessageBox.Cancel)
+            
+            if ret == QMessageBox.Ok:
+                self.revertLocalChangeForLayers(repo, changedLayes, currentBranchName)
+    
+    def showLocalChanges(self):
+        pass
     
     def mergeInto(self, mergeInto, branch):
         """ merge the branch names branch into the branch mergeInto"""
@@ -593,6 +626,25 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                        level=QgsMessageBar.INFO,
                                        duration=5)
 
+    def revertLocalChangeForLayers(self, repo, layers, branchName):
+        self.prepareProgressBar("Reverting local changes in branch {0}".format(branchName), len(layers))
+            
+        for layer in layers:
+            self.progressMessageBar.setText("Reverting local changes {0}. Layer: {1}".format(branchName, layer.name()))
+            commitid = getCommitId(layer)
+            tracking = getTrackingInfo(layer)
+            # FIXME: checkoutlayer is very slow, because it fetches all data from the server.
+            # Would be better to use the local audit data, if possible.
+            repo.checkoutlayer(tracking.geopkg, tracking.layername, None, commitid)
+            layer.reload()
+            layer.triggerRepaint()
+                
+        # Remove the progress bar
+        iface.messageBar().clearWidgets()
+                
+        config.iface.messageBar().pushMessage("GeoGig", "Local changes have been discarded",
+                                              level=QgsMessageBar.INFO,
+                                              duration=5)
                 
     def ensureDataModelIsUnchanged(self, filename, layername):
         """I check, that the data model in the local GPKF file did not change between 
