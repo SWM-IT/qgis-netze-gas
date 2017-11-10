@@ -39,7 +39,8 @@ from qgis.utils import iface
 from qgis.core import QgsMessageLog
 from qgis.gui import QgsMessageBar
 from qgis.PyQt.QtWidgets import (QMessageBox, 
-                                 QTreeWidgetItem, 
+                                 QTreeWidgetItem,
+                                 QListWidgetItem, 
                                  QMenu, 
                                  QInputDialog,
                                  QAbstractItemView, 
@@ -56,10 +57,9 @@ from geogig.geogigwebapi.repository import Repository
 from geogig.tools.layertracking import (getTrackingInfo, isRepoLayer)
 from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
-from geogig.gui.dialogs.historyviewer import CommitTreeItemWidget, CommitTreeItem 
 
 from GeogigLocalClient.tools.branchtracking import BranchesTracker
-#from wx._grid import Grid_IsCurrentCellReadOnly
+
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geogig_local_client_dialog_base.ui'))
@@ -103,15 +103,24 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.branchesList.setContextMenuPolicy(Qt.CustomContextMenu)
         self.branchesList.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.branchesList.itemSelectionChanged.connect(self.branchSelected)
-        self.branchesList.customContextMenuRequested.connect(self.showBranchedPopupMenu)
+        self.branchesList.customContextMenuRequested.connect(self.showBranchesPopupMenu)
+        
+        self.commitsList.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.commitsList.customContextMenuRequested.connect(self.showCommitsPopupMenu)
         
         self.updateClient()
     
-    def showBranchedPopupMenu(self, point):
+    def showBranchesPopupMenu(self, point):
         item = self.branchesList.currentItem()
         self.menu = item.menu()
         point = self.branchesList.mapToGlobal(point)
         self.menu.popup(point)
+        
+    def showCommitsPopupMenu(self, point):
+        item = self.commitsList.currentItem()
+        self.menu = item.menu()
+        point = self.commitsList.mapToGlobal(point)
+        self.menu.popup(point)        
         
     def updateClient(self):
         self.fillServersCombo()
@@ -195,7 +204,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             
             commits = repo.log(until = selectedBranchName, limit = 100, path = None)
             for commit in commits:
-                item = CommitTreeItem(commit)
+                item = CommitTreeItem(self, commit)
                 self.commitsList.addTopLevelItem(item)
                 w = CommitTreeItemWidget(commit, tags.get(commit.commitid, []))
                 self.commitsList.setItemWidget(item, 0, w)
@@ -293,6 +302,20 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 repo.createbranch(commit.commitid, text.replace(" ", "_"))
                 self.fillBranchesList()
                 repoWatcher.repoChanged.emit(repo)
+                
+    def createBranchFromCommit(self, commit):
+        ok, repo = self.ensureCurrentRepo()
+        if not ok:
+            return
+        
+        text, ok = QInputDialog.getText(self, 'Create New Branch',
+                                            'Enter the name for the new branch:')
+        
+        if ok:
+            repo.createbranch(commit.commitid, text.replace(" ", "_"))
+            self.fillBranchesList()
+            repoWatcher.repoChanged.emit(repo)
+                
 
     def deleteBranch(self, branchName):
         ok, repo = self.ensureCurrentRepo()
@@ -602,6 +625,10 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 
         return changedLayers 
     
+#############################################################################################################
+#
+# Branches tree elements
+#
         
 class BranchTreeItem(QTreeWidgetItem):
     def __init__(self, owner, branchName, repo, isCurrent = False):
@@ -651,3 +678,49 @@ class BranchTreeItemWidget(QLabel):
             text = self.branchName
             
         self.setText(text)
+        
+#############################################################################################################
+#
+# Commits tree elements
+#
+
+class CommitTreeItem(QTreeWidgetItem):
+
+    def __init__(self, owner, commit):
+        QListWidgetItem.__init__(self)
+        self.owner = owner
+        self.commit = commit
+        self.ref = commit.commitid
+        
+    def menu(self):
+        menu = QMenu()
+        
+        createBranchAction = QAction("Create branch from this commit", menu)
+        createBranchAction.triggered.connect(partial(self.owner.createBranchFromCommit, self.commit))
+        menu.addAction(createBranchAction)
+                                
+        return menu
+        
+class CommitTreeItemWidget(QLabel):
+    def __init__(self, commit, tags):
+        QTextEdit.__init__(self)
+        self.setWordWrap(False)
+        self.tags = tags
+        self.commit = commit
+        self.updateText()
+
+    def updateText(self):
+        if self.tags:
+            tags = "&nbsp;" + "&nbsp;".join(['<font color="black" style="background-color:yellow">&nbsp;%s&nbsp;</font>'
+                                             % t for t in self.tags]) + "&nbsp;"
+        else:
+            tags = ""
+        size = self.font().pointSize()
+        text = ('%s<b><font style="font-size:%spt">%s</font></b>'
+            '<br><font color="#5f6b77" style="font-size:%spt"><b>%s</b> by <b>%s</b></font> '
+            '<font color="#5f6b77" style="font-size:%spt; background-color:rgb(225,225,225)"> %s </font>' %
+            (tags, str(size), self.commit.message.splitlines()[0], str(size - 1),
+             self.commit.authorprettydate(), self.commit.authorname, str(size - 1), self.commit.id[:10]))
+        self.setText(text)
+
+
