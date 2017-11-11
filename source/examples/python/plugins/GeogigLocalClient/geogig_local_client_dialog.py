@@ -62,6 +62,7 @@ from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChan
 from geogig.gui.dialogs.diffviewerdialog import DiffViewerDialog
 
 from GeogigLocalClient.tools.branchtracking import BranchesTracker
+from GeogigLocalClient.gui.dialogs.multilayerlocaldiffviewerdialog import MultiLayerLocalDiffViewerDialog
 
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -453,7 +454,18 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 self.revertLocalChangeForLayers(repo, changedLayes, currentBranchName)
     
     def showLocalChanges(self):
-        pass
+        repo = self.getCurrentRepo()
+        currentBranchName = self.getCurrentBranchName(repo)
+        layers = self.layersInBranch(repo, currentBranchName)
+        changedLayes = self.getChangedLayersOf(layers) 
+        
+        if not changedLayes:
+            QMessageBox.warning(config.iface.mainWindow(), 'No local changes',
+                "There are no local changes to be shown",
+                QMessageBox.Ok)
+        else:
+            dlg = MultiLayerLocalDiffViewerDialog(iface.mainWindow(), changedLayes)
+            dlg.exec_()
     
     def mergeInto(self, mergeInto, branch):
         """ merge the branch names branch into the branch mergeInto"""
