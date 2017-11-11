@@ -772,15 +772,15 @@ class BranchTreeItem(QTreeWidgetItem):
     def menu(self):
         menu = QMenu()
         
-        gotoAction = QAction("Goto this branch", menu)
+        gotoAction = QAction(icon("goto.png"), "Goto this branch", menu)
         gotoAction.triggered.connect(partial(self.owner.gotoBranch, self.branchName))
         menu.addAction(gotoAction)
         
-        createBranchAction = QAction("Create branch", menu)
+        createBranchAction = QAction(icon("create_branch.png"), "Create branch", menu)
         createBranchAction.triggered.connect(partial(self.owner.createBranchFromBranch, self.branchName))
         menu.addAction(createBranchAction)   
         
-        deleteBranchAction = QAction("Delete branch", menu)
+        deleteBranchAction = QAction(icon("delete.svg"), "Delete branch", menu)
         deleteBranchAction.triggered.connect(partial(self.owner.deleteBranch, self.branchName))
         menu.addAction(deleteBranchAction)                
         
@@ -822,23 +822,23 @@ class CommitTreeItem(QTreeWidgetItem):
     def menu(self):
         menu = QMenu()
         
-        createBranchAction = QAction("Create branch from this commit", menu)
+        createBranchAction = QAction(icon("create_branch.png"), "Create branch from this commit", menu)
         createBranchAction.triggered.connect(partial(self.owner.createBranchFromCommit, self.commit))
         menu.addAction(createBranchAction)
         
-        showDiffsAction = QAction("Show changes of this commit", menu)
+        showDiffsAction = QAction(icon("diff-selected.png"), "Show changes of this commit", menu)
         showDiffsAction.triggered.connect(partial(self.owner.showDiffs, self.commit))
         menu.addAction(showDiffsAction)
         
-        describeVersionAction = QAction("Show details of this commit", menu)
+        describeVersionAction = QAction(icon("repo-summary.png"), "Show details of this commit", menu)
         describeVersionAction.triggered.connect(partial(self.owner.describeVersion, self.commit))
         menu.addAction(describeVersionAction)
         
-        createTagAction = QAction("Create tag", menu)
+        createTagAction = QAction(icon("tag.gif"), "Create tag", menu)
         createTagAction.triggered.connect(partial(self.owner.createTag, self.commit))
         menu.addAction(createTagAction)
         
-        deleteTagsAction = QAction("Delete tags", menu)
+        deleteTagsAction = QAction(icon("tag.gif"), "Delete tags", menu)
         deleteTagsAction.triggered.connect(partial(self.owner.deleteTags, self.commit))
         menu.addAction(deleteTagsAction)
                                 
