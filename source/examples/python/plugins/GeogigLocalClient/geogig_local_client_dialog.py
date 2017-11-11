@@ -57,6 +57,7 @@ from geogig.geogigwebapi.repository import Repository
 from geogig.tools.layertracking import (getTrackingInfo, isRepoLayer)
 from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
+from geogig.gui.dialogs.diffviewerdialog import DiffViewerDialog
 
 from GeogigLocalClient.tools.branchtracking import BranchesTracker
 
@@ -318,6 +319,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 repoWatcher.repoChanged.emit(repo)
                 
     def createBranchFromCommit(self, commit):
+        """I create a new branch from the given commit"""
         ok, repo = self.ensureCurrentRepo()
         if not ok:
             return
@@ -329,7 +331,25 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             repo.createbranch(commit.commitid, text.replace(" ", "_"))
             self.fillBranchesList()
             repoWatcher.repoChanged.emit(repo)
-                
+            
+    def showDiffs(self, commit, commit2 = None):
+        """I start the DiffViewerDialog to show all chnages introduces by the given commit"""
+        # FIXME: This is more or less copied from historyviewer        
+        commit2 = commit2 or commit.parent
+        commit, commit2 = self._sortCommits(commit, commit2)
+
+        dlg = DiffViewerDialog(self, self.getCurrentRepo(), commit2, commit)
+        dlg.exec_()
+        
+    def _sortCommits(self, commit, commit2):
+        # FIXME: This is copied from historyviewer
+        try:
+            if commit2.authordate > commit.authordate:
+                return commit2, commit
+            else:
+                return commit, commit2
+        except:
+            return commit, commit2                
 
     def deleteBranch(self, branchName):
         ok, repo = self.ensureCurrentRepo()
@@ -362,6 +382,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.mergeInto(self.MasterBranchName, currentBranchName)
         
     def revertLocalChanges(self):
+        """ I revert all local changes of all tracked layers"""
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
         layers = self.layersInBranch(repo, currentBranchName)
@@ -752,6 +773,10 @@ class CommitTreeItem(QTreeWidgetItem):
         
         createBranchAction = QAction("Create branch from this commit", menu)
         createBranchAction.triggered.connect(partial(self.owner.createBranchFromCommit, self.commit))
+        menu.addAction(createBranchAction)
+        
+        createBranchAction = QAction("Show changes of this commit", menu)
+        createBranchAction.triggered.connect(partial(self.owner.showDiffs, self.commit))
         menu.addAction(createBranchAction)
                                 
         return menu
