@@ -366,7 +366,24 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 % (commit.commitid, commit.authorname, commit.authordate.strftime(" %m/%d/%y %H:%M"),
                    commit.message.replace("\n", "<br>"),commit.modified, commit.added,
                    commit.removed))
-        showMessageDialog("Commit description", html)              
+        showMessageDialog("Commit description", html)    
+        
+    def createTag(self, commit):
+        # FIXME: This is more or less copied from historyviewer
+        tagname, ok = QInputDialog.getText(self, 'Tag name',
+                                              'Enter the tag name:')
+        if ok:
+            self.getCurrentRepo().createtag(commit.commitid, tagname)
+            self.updateTags(commit.commitid, tagname)
+
+    def deleteTags(self, commit):
+        # FIXME: This is more or less copied from historyviewer
+        tags = defaultdict(list)
+        for k, v in self.getCurrentRepo().tags().items():
+            tags[v].append(k)
+        for tag in tags[commit.commitid]:
+            self.getCurrentRepo().deletetag(tag)
+        self.updateTags(commit.commitid)          
 
     def deleteBranch(self, branchName):
         ok, repo = self.ensureCurrentRepo()
@@ -383,6 +400,23 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         repo.deletebranch(branchName)
         self.fillBranchesList()
         repoWatcher.repoChanged.emit(repo)
+        
+    def updateTags(self, commitid, tag=None):
+        # FIXME: branchSelected rebuilds the list of commits from scratch
+        # It would be better, to update the tag list explicitly for the commit.
+        self.branchSelected()
+        # Code from history viewer setting the tags explicitly.
+        #for i in range(self.topLevelItemCount()):
+        #    branchItem = self.topLevelItem(i)
+        #    for j in range(branchItem.childCount()):
+        #        commitItem = branchItem.child(j)
+        #        if commitItem.commit.commitid == commitid:
+        #            w = self.itemWidget(commitItem, 0)
+        #            if tag is None:
+        #                w.tags = []
+        #            else:
+        #                w.tags.append(tag)
+        #            w.updateText()
         
     def pullMasterToCurrentBranch(self):
         repo = self.getCurrentRepo()
@@ -799,6 +833,14 @@ class CommitTreeItem(QTreeWidgetItem):
         describeVersionAction = QAction("Show details of this commit", menu)
         describeVersionAction.triggered.connect(partial(self.owner.describeVersion, self.commit))
         menu.addAction(describeVersionAction)
+        
+        createTagAction = QAction("Create tag", menu)
+        createTagAction.triggered.connect(partial(self.owner.createTag, self.commit))
+        menu.addAction(createTagAction)
+        
+        deleteTagsAction = QAction("Delete tags", menu)
+        deleteTagsAction.triggered.connect(partial(self.owner.deleteTags, self.commit))
+        menu.addAction(deleteTagsAction)
                                 
         return menu
         
