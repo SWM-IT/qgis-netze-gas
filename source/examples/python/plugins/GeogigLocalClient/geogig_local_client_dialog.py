@@ -193,7 +193,8 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             branchItem.setSelected(branchName == currentBranchName)
             
             if branchName == currentBranchName:
-               self.expandUptoTop(parentBranchItem)          
+               self.expandUptoTop(parentBranchItem)
+               self.branchesList.scrollToItem(parentBranchItem, QtGui.QAbstractItemView.PositionAtCenter)          
             
             # Recursion
             self._populateBranchItem(repo, branchItem, currentBranchName)
