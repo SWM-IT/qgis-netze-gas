@@ -60,6 +60,7 @@ from geogig.tools.layertracking import (getTrackingInfo, isRepoLayer)
 from geogig.tools.layers import namesFromLayer, hasLocalChanges
 from geogig.tools.gpkgsync import (updateFeatureIds, getCommitId, applyLayerChanges)
 from geogig.gui.dialogs.diffviewerdialog import DiffViewerDialog
+from geogig.gui.dialogs.conflictdialog import ConflictDialog
 
 from GeogigLocalClient.tools.branchtracking import BranchesTracker
 from GeogigLocalClient.gui.dialogs.multilayerlocaldiffviewerdialog import MultiLayerLocalDiffViewerDialog
