@@ -720,11 +720,12 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                        duration=5)
         
     def gotoBranchForLayers(self, repo, branchName, layers):
+        displayBranchName = self.branchesHelper.displayName(branchName)
         self.prepareProgressBar("Moving to branch {0}".format(branchName), len(layers))
         
         i = 0
         for layer in layers:
-            self.progressMessageBar.setText("Moving to branch {0}. Layer: {1}".format(branchName, layer.name()))
+            self.progressMessageBar.setText("Moving to branch {0}. Layer: {1}".format(displayBranchName, layer.name()))
             
             currentCommitId = getCommitId(layer)
             newCommitId     = repo.revparse(branchName)
@@ -749,15 +750,16 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         iface.messageBar().clearWidgets()
         
         # Show a nice success message to the user
-        iface.messageBar().pushMessage("GeoGig", "Move to branch " + branchName + " done",
+        iface.messageBar().pushMessage("GeoGig", "Move to branch " + displayBranchName + " done",
                                        level=QgsMessageBar.INFO,
                                        duration=5)
 
     def revertLocalChangeForLayers(self, repo, layers, branchName):
-        self.prepareProgressBar("Reverting local changes in branch {0}".format(branchName), len(layers))
+        displayBranchName = self.branchesHelper.displayName(branchName)
+        self.prepareProgressBar("Reverting local changes in branch {0}".format(displayBranchName), len(layers))
             
         for layer in layers:
-            self.progressMessageBar.setText("Reverting local changes {0}. Layer: {1}".format(branchName, layer.name()))
+            self.progressMessageBar.setText("Reverting local changes {0}. Layer: {1}".format(displayBranchName, layer.name()))
             commitid = getCommitId(layer)
             tracking = getTrackingInfo(layer)
             # FIXME: checkoutlayer is very slow, because it fetches all data from the server.
