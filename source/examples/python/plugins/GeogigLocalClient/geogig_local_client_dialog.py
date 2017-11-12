@@ -63,6 +63,7 @@ from geogig.gui.dialogs.diffviewerdialog import DiffViewerDialog
 from geogig.gui.dialogs.conflictdialog import ConflictDialog
 
 from GeogigLocalClient.tools.branchtracking import BranchesTracker
+from GeogigLocalClient.tools.brancheshelper import BranchesHelper
 from GeogigLocalClient.gui.dialogs.multilayerlocaldiffviewerdialog import MultiLayerLocalDiffViewerDialog
 
 
@@ -78,7 +79,7 @@ def icon(fileName):
 class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     
     StrDefaultCommitComment = "Add comment for commit"
-    MasterBranchName = "master"
+    MasterBranchName = BranchesHelper.MASTER_BRANCH_NAME
     
     def __init__(self, parent=None):
         """Constructor."""
@@ -158,38 +159,52 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         if repo:
             brancheNames = repo.branches()
-            # "master is the only top level item    
-            for branchName in brancheNames:
-                if branchName == self.MasterBranchName:
-                    topItem = BranchTreeItem(self, branchName, repo, branchName == currentBranchName)
-                    self.branchesList.addTopLevelItem(topItem)
-                    w = BranchTreeItemWidget(branchName, branchName == currentBranchName)
-                    self.branchesList.setItemWidget(topItem, 0, w)
-                    
-                    if branchName == currentBranchName:
-                        topItem.setSelected(True)
-                    else:
-                        topItem.setExpanded(True)
-                    
-                    break
-                
-            # Now the other branches. Thea are all children of master
-            # FIXME: I would like to introduce a better hierarchy...
-            for branchName in brancheNames:
-                if branchName == self.MasterBranchName:
-                    pass
-                else:
-                    # I assume, that branch names are unique inside one repository.
-                    item = BranchTreeItem(self, branchName, repo, branchName == currentBranchName)
-                    topItem.addChild(item)
-                    w = BranchTreeItemWidget(branchName, branchName == currentBranchName)
-                    self.branchesList.setItemWidget(item, 0, w)
-                    
-                    if branchName == currentBranchName:
-                        item.setSelected(True)
+            self.branchesHelper = BranchesHelper(brancheNames)
+            
+            # Create the item for master branch   
+            topItem = self._setMasterBranch(repo, currentBranchName)
+            # Now recursively all sub branches           
+            self._populateBranchItem(repo, topItem, currentBranchName)
                 
             self.branchesList.resizeColumnToContents(0)  
             self.currentBranchChanged(currentBranchName)
+            
+            
+    def _setMasterBranch(self, repo, currentBranchName):
+        branchName = self.MasterBranchName
+        
+        topItem = BranchTreeItem(self, branchName, repo, branchName == currentBranchName)
+        self.branchesList.addTopLevelItem(topItem)
+        w = BranchTreeItemWidget(self.branchesHelper.displayName(branchName), branchName == currentBranchName)
+        self.branchesList.setItemWidget(topItem, 0, w)
+        # Select the branch, if it is currentBranchName
+        topItem.setSelected(branchName == currentBranchName)
+
+        return topItem 
+    
+    
+    def _populateBranchItem(self, repo, parentBranchItem, currentBranchName):
+        
+        for branchName in self.branchesHelper.childrenOfBranch(parentBranchItem.branchName):
+            branchItem = BranchTreeItem(self, branchName, repo, branchName == currentBranchName)
+            parentBranchItem.addChild(branchItem)
+            w = BranchTreeItemWidget(self.branchesHelper.displayName(branchName), branchName == currentBranchName)
+            self.branchesList.setItemWidget(branchItem, 0, w)
+            branchItem.setSelected(branchName == currentBranchName)
+            
+            if branchName == currentBranchName:
+               self.expandUptoTop(parentBranchItem)          
+            
+            # Recursion
+            self._populateBranchItem(repo, branchItem, currentBranchName)
+       
+            
+    def expandUptoTop(self, branchItem):
+        """ expand the given branch item and recursively all parents"""
+        branchItem.setExpanded(True)
+        if branchItem.parent():
+            self.expandUptoTop(branchItem.parent())
+            
             
     def getCurrentBranchName(self, repo):
         branchPath = self.branchtracking.getCurrentBranchPath(repo)
@@ -197,8 +212,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         if branchPath:
             return branchPath[-1]
         
+        
     def currentBranchChanged(self, currentBranchName):
-        if not currentBranchName or currentBranchName == "" or currentBranchName == self.MasterBranchName:
+        if not currentBranchName or currentBranchName == ""  or currentBranchName == self.MasterBranchName:
             self.tbSync.setEnabled(False)
             self.tbPull.setEnabled(False)
             self.tbPush.setEnabled(False)
@@ -318,9 +334,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             text, ok = QInputDialog.getText(self, 'Create New Branch',
                                             'Enter the name for the new branch:')
             if ok:
-                repo.createbranch(commit.commitid, text.replace(" ", "_"))
+                newBranchName = self.branchesHelper.subBranchNameFor(text.replace(" ", "_"), branchName)
+                repo.createbranch(commit.commitid, newBranchName)
                 self.fillBranchesList()
                 repoWatcher.repoChanged.emit(repo)
+                
                 
     def createBranchFromCommit(self, commit):
         """I create a new branch from the given commit"""
@@ -332,9 +350,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                             'Enter the name for the new branch:')
         
         if ok:
-            repo.createbranch(commit.commitid, text.replace(" ", "_"))
+            newBranchName = self.branchesHelper.subBranchNameFor(text.replace(" ", "_"), self.selectedBranchName())
+            repo.createbranch(commit.commitid, newBranchName)
             self.fillBranchesList()
             repoWatcher.repoChanged.emit(repo)
+            
             
     def showDiffs(self, commit, commit2 = None):
         """I start the DiffViewerDialog to show all chnages introduces by the given commit"""
@@ -423,8 +443,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     def pullMasterToCurrentBranch(self):
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
+        parentBranchName  = self.branchesHelper.parentName(currentBranchName)
         # Do the merge on server side
-        self.mergeInto(currentBranchName, self.MasterBranchName)
+        self.mergeInto(currentBranchName, parentBranchName)
         # Fetch the new situation from server
         layers = self.layersInBranch(repo, currentBranchName)
         self.syncLayers(layers, currentBranchName, "")
@@ -432,7 +453,8 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
     def pushCurrentBranchToMaster(self):
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
-        self.mergeInto(self.MasterBranchName, currentBranchName)
+        parentBranchName  = self.branchesHelper.parentName(currentBranchName)
+        self.mergeInto(parentBranchName, currentBranchName)
         
     def revertLocalChanges(self):
         """ I revert all local changes of all tracked layers"""
