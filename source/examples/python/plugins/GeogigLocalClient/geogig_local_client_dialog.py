@@ -103,8 +103,8 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.cbbRepos.currentIndexChanged.connect(self.fillBranchesList)
         
         self.tbSync.clicked.connect(self.syncSelectedBranch)
-        self.tbPull.clicked.connect(self.pullMasterToCurrentBranch)
-        self.tbPush.clicked.connect(self.pushCurrentBranchToMaster)
+        self.tbPull.clicked.connect(self.pullParentToCurrentBranch)
+        self.tbPush.clicked.connect(self.pushCurrentBranchToParent)
         self.tbRevertLocalChanges.clicked.connect(self.revertLocalChanges)
         self.tbShowLocalChanges.clicked.connect(self.showLocalChanges)
         
@@ -418,10 +418,28 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                     QMessageBox.No)
         if ret == QMessageBox.No:
             return
+        
+        if self.branchesHelper.childrenOfBranch(branchName):
+            ret = QMessageBox.question(self, 'Delete Branch Hierarchy',
+                                       'The branch has sub branches that will also be deleted. '
+                                       'Do you want to delete the current branch with all sub sub branches?',
+                                       QMessageBox.Yes | QMessageBox.No,
+                                       QMessageBox.No)
+            if ret == QMessageBox.No:
+                return            
 
-        repo.deletebranch(branchName)
+        self.deleteBranchHierarchy(repo, branchName)
         self.fillBranchesList()
         repoWatcher.repoChanged.emit(repo)
+       
+        
+    def deleteBranchHierarchy(self, repo, branchName):
+        """I delete the given branch and recursively all sub branches"""
+        repo.deletebranch(branchName)
+        
+        for subBranch in self.branchesHelper.childrenOfBranch(branchName):
+            self.deleteBranchHierarchy(repo, subBranch)
+            
         
     def updateTags(self, commitid, tag=None):
         # FIXME: branchSelected rebuilds the list of commits from scratch
@@ -440,7 +458,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         #                w.tags.append(tag)
         #            w.updateText()
         
-    def pullMasterToCurrentBranch(self):
+    def pullParentToCurrentBranch(self):
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
         parentBranchName  = self.branchesHelper.parentName(currentBranchName)
@@ -450,7 +468,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         layers = self.layersInBranch(repo, currentBranchName)
         self.syncLayers(layers, currentBranchName, "")
     
-    def pushCurrentBranchToMaster(self):
+    def pushCurrentBranchToParent(self):
         repo = self.getCurrentRepo()
         currentBranchName = self.getCurrentBranchName(repo)
         parentBranchName  = self.branchesHelper.parentName(currentBranchName)
@@ -583,7 +601,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         i = 0
         for layer in layers:
-            self.progressMessageBar.setText("Synchronising branch {0}, Layer: {1}".format(branchName, layer.name()))
+            displayBranchName = self.branchesHelper.displayName(branchName)
+            infoText = "Synchronising branch {0}, Layer: {1}".format(displayBranchName, layer.name())
+            self.progressMessageBar.setText(infoText)
             self.syncLayer(layer, branchName, commitMessage)
             i += 1
             self.progressBar.setValue(i)
