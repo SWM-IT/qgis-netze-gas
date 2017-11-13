@@ -118,6 +118,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.branchesList.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.branchesList.itemSelectionChanged.connect(self.branchSelected)
         self.branchesList.customContextMenuRequested.connect(self.showBranchesPopupMenu)
+        self.branchesList.itemDoubleClicked.connect(partial(self.gotoBranchItem))
         
         self.commitsList.setContextMenuPolicy(Qt.CustomContextMenu)
         self.commitsList.customContextMenuRequested.connect(self.showCommitsPopupMenu)
@@ -134,8 +135,11 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         item = self.commitsList.currentItem()
         self.menu = item.menu()
         point = self.commitsList.mapToGlobal(point)
-        self.menu.popup(point)        
+        self.menu.popup(point)       
         
+    def gotoBranchItem(self, branchItem, clumnNumber):
+        self.gotoBranch(branchItem.branchName)
+
     def updateClient(self):
         self.fillServersCombo()
         
