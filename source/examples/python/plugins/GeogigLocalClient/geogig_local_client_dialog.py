@@ -445,7 +445,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         if self.branchesHelper.childrenOfBranch(branchName):
             ret = QMessageBox.question(self, 'Delete Branch Hierarchy',
                                        'The branch has sub branches that will also be deleted. '
-                                       'Do you want to delete the current branch with all sub sub branches?',
+                                       'Do you want to delete the current branch with all sub branches?',
                                        QMessageBox.Yes | QMessageBox.No,
                                        QMessageBox.No)
             if ret == QMessageBox.No:
