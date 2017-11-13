@@ -4,7 +4,7 @@
 
 :Autor: Jan Gerste
 :Date: $Date: 2017-10-27 10:02:13 +0000 (Fri, 27 Oct 2017) $
-:Version: $Revision: 1.0 $
+:Version: $Revision: 1.1 $
 :Beschreibung: Darlegung diverser Möglichkeiten zur Auswertung von Daten anhand existierender QGIS Methoden
 
 
@@ -120,6 +120,28 @@ Das Verarbeitungswerkzeuge-Fenster
  .. image:: images/analyse/laengenraster.png
 
  Eine ausführliche Liste über die verfügbaren Werkzeuge sowie Informationen über deren Aufruf per Code finden Sie hier: https://docs.qgis.org/2.18/en/docs/user_manual/processing_algs/index.html
+
+**Beispiel**
+
+ Gegeben ist die Aufgabe, alle Hausanschlüsse zu isolieren, die sich weniger als 100 Meter von einem gegebenen Abschnitt der Hauptleitung entfernt befinden.
+
+ .. image:: images/analyse/beispiel1.png
+
+ Dazu wählen Sie zuerst mit dem **Auswahl-Werkzeug** einen oder mehrere beliebig große Abschnitte des Layers **G Hauptltg.-Abschnitt** aus. Danach rufen Sie aus der **Werkzeugkiste** das Werkzeug **Puffer festen Abstands** (QGIS-Geo-Algorithmen > Vektorgeometriewerkzeuge) auf und wählen *G Hauptltg.-Abschnitt* als **Eingabe-Layer** und als **Entfernung** *100* Meter.
+
+ .. image:: images/analyse/puffer.png
+
+ Der daraufhin erstellte Layer beinhaltet Polygone die die Pufferzonen mit dem gewählten Radius darstellen. Dabei wurde für jeden geometrisch eigenständigen Abschnitt ein eigenes Polygon erstellt. Um das zu vereinfachen und eventuellen Fehlern vorzubeugen wählen sie das Werkzeug **Dissolve** (QGIS-Geo-Algorithmen > Vektorgeometriewerkzeuge), welches alle überlappenden Polygone zu einem zusammenfügt. Dabei ist hier die Option **Alle auflösen** vollkommen ausreichend.
+
+ .. image:: images/analyse/beispiel2.png
+
+ Das Ergebnis stellt nun die Fläche dar, in der sich die zu findenden **Hausanschlüsse** befinden. Um diese aus ihrem Layer zu extrahieren, wählen Sie das Werkzeug **Verschneidung** (QGIS-Geo-Algorithmen > Vektorlayerüberlagerungswerkzeuge). Hier geben Sie als **Eingabelayer** *G Hausanschluß* an; für **Layer schneiden** wählen Sie den soeben erstellen vereinfachten Puffer-Layer. Aktivieren Sie die Option **NULL-Geometrien ignorieren** um Fehlermeldungen vorzubeugen falls diese existieren.
+
+ .. image:: images/analyse/verschneidung.png
+
+ Als Endergebnis erhalten Sie nun einen Layer, auf dem sich nur die gesuchten Hausanschlüsse befinden. Alle Objekte auf diesem Layer besitzen weiterhin alle ihre Feld-Werte aus dem Original.
+
+ .. image:: images/analyse/beispiel3.png
 
 
 Erweiterungen
