@@ -58,6 +58,10 @@ class BranchesHelper(object):
     def childrenOfBranch(self, parentBranchName):
         children = []
         for branchName in self.brancheNames:
+            # Some branch names are in fact int or long. Seems, we cannot distinguish that when fetching from HTTP.
+            if isinstance(branchName, int) or isinstance(branchName, long):
+                branchName = str(branchName).decode("utf-8")
+            
             if self.parentName(branchName) == parentBranchName:
                 children.append(branchName)
                 
