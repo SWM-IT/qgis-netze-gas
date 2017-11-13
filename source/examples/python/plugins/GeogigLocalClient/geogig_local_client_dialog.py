@@ -271,6 +271,16 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         layers = self.layersInBranch(repo, branchName)        
         changedLayes = self.getChangedLayersOf(layers) 
         
+        # I try to avoid syncing while a layer is in edit mode. 
+        # That might lead to DB locked error otherwise. 
+        for layer in layers:
+            if layer.isEditable():
+                QMessageBox.warning(config.iface.mainWindow(), 'Cannot sync',
+                                    "One or more layers are in edit mode. "
+                                    "Please switch off edit mode before syncing. ",
+                                    QMessageBox.Ok) 
+                return
+        
         if changedLayes:
             commitComment, ok = QInputDialog.getText(self, 'Commit message',
                                                     'Enter a message:')
