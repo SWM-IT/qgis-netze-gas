@@ -332,8 +332,8 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         commit = self.latestCommit(repo, branchName)
         
         if commit:
-            text, ok = QInputDialog.getText(self, 'Create New Branch',
-                                            'Enter the name for the new branch:')
+            text, ok = self.getNameForNewBranch()
+            
             if ok:
                 newBranchName = self.branchesHelper.subBranchNameFor(text.replace(" ", "_"), branchName)
                 repo.createbranch(commit.commitid, newBranchName)
@@ -347,14 +347,26 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         if not ok:
             return
         
-        text, ok = QInputDialog.getText(self, 'Create New Branch',
-                                            'Enter the name for the new branch:')
+        text, ok = self.getNameForNewBranch()
         
         if ok:
             newBranchName = self.branchesHelper.subBranchNameFor(text.replace(" ", "_"), self.selectedBranchName())
             repo.createbranch(commit.commitid, newBranchName)
             self.fillBranchesList()
             repoWatcher.repoChanged.emit(repo)
+            
+    def getNameForNewBranch(self):
+        text, ok = QInputDialog.getText(self, 'Create New Branch',
+                                            'Enter the name for the new branch:')
+        
+        if text.find("($") > -1:
+            QMessageBox.warning(config.iface.mainWindow(), 'Cannot create branch: Bad name',
+                'Branch name must not contain "($"',
+                QMessageBox.Ok) 
+            
+            return text, False
+                
+        return text, ok
             
             
     def showDiffs(self, commit, commit2 = None):
