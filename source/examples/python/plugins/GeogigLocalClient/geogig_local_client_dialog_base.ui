@@ -69,6 +69,16 @@
            </widget>
           </item>
           <item>
+           <widget class="QToolButton" name="tbSync">
+            <property name="toolTip">
+             <string>Sync</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QToolButton" name="tbPull">
             <property name="toolTip">
              <string>Pull</string>
@@ -82,16 +92,6 @@
            <widget class="QToolButton" name="tbPush">
             <property name="toolTip">
              <string>Push</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="tbSync">
-            <property name="toolTip">
-             <string>Sync</string>
             </property>
             <property name="text">
              <string/>
