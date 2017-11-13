@@ -864,6 +864,10 @@ class BranchTreeItem(QTreeWidgetItem):
         deleteBranchAction.triggered.connect(partial(self.owner.deleteBranch, self.branchName))
         menu.addAction(deleteBranchAction)                
         
+        # Do not delete master branch
+        if self.branchName == self.owner.MasterBranchName:
+            deleteBranchAction.setEnabled(False)
+        
         return menu
 
 
