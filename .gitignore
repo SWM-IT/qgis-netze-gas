@@ -10,3 +10,7 @@ source/examples/python/plugins/CoordLister/coord_lister.pyc
 source/examples/python/plugins/EditorParser/__init__.pyc
 source/examples/python/plugins/CoordLister/resources.pyc
 source/examples/python/plugins/EditorParser/__init__.pyc
+source/examples/python/plugins/TopologicGeometryAdd/TopologyConnector.pyc
+source/examples/python/plugins/TopologicGeometryAdd/TopologyConnector.pyc
+*.pyc
+*.pyc
