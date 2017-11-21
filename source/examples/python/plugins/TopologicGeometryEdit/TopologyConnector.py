@@ -62,11 +62,10 @@ class TopologyConnector():
         '''
         self.layerDbInfo = aLayerDbInfo
     
-    def all_edges_for_node(self, aTopoPoint):
+    def all_edges_for_node(self, nodeId):
         '''
         returns all connected edges to a node
         '''
-        nodeId = aTopoPoint.getNodeId()
         if nodeId:
             # get db connection
             conn = self.db_connection(None, None, None, None)
@@ -204,7 +203,7 @@ class TopologyConnector():
                 
                 return lineData
         
-    def get_points_for_nodeids(self, nodeIds, topoEdgeData):
+    def get_points_for_nodeids(self, nodeIds, topoId):
         '''
         returns the point objects related to the given node ids
         '''
@@ -214,7 +213,6 @@ class TopologyConnector():
                 pointIds = []
                 pointData = []
                 cur = conn.cursor()
-                topoId = topoEdgeData[0].getTopologyId()
                 reTableName = "gas_topo.relation"
                 topoTableName = "topology.layer"
                 cur.execute("""SELECT f.topogeo_id, h.schema_name, h.table_name, f.element_id from """ + reTableName + """ f, """ + topoTableName + """ h WHERE f.element_id in (""" + ','.join(map(str, nodeIds)) + """) AND h.topology_id = """ + str(topoId) + """ AND h.layer_id = f.layer_id and f.element_type = 1""")
@@ -238,7 +236,7 @@ class TopologyConnector():
                 
                 return pointData
         
-    def get_lines_for_edgeids(self, edgeIds, topoNodeData):
+    def get_lines_for_edgeids(self, edgeIds, topoId):
         '''
         returns the line objects related to the given edge ids
         '''
@@ -248,7 +246,6 @@ class TopologyConnector():
                 lineIds = []
                 lineData = []
                 cur = conn.cursor()
-                topoId = topoNodeData.getTopologyId() #1 
                 reTableName = "gas_topo.relation"
                 topoTableName = "topology.layer"
                 cur.execute("""SELECT f.topogeo_id, h.schema_name, h.table_name, f.element_id from """ + reTableName + """ f, """ + topoTableName + """ h WHERE f.element_id in (""" + ','.join(map(str, edgeIds)) + """) AND h.topology_id = """ + str(topoId) + """ AND h.layer_id = f.layer_id""")
