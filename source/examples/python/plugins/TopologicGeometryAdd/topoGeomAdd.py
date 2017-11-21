@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL, pyqtSlot
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL, pyqtSlot, QgsMessageLog
 from PyQt4.QtGui import QAction, QIcon, QMessageBox
 from qgis.core import QgsMapLayerRegistry, QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry, QgsMessageLog, QgsSpatialIndex
 #from qgis.core import *
@@ -30,7 +30,6 @@ import resources
 from topoGeomAdd_dialog import TopologicGeometryAddDialog
 # Import the topology connector class
 from TopologyConnector import TopologyConnector
-from LayerDbInfo import LayerDbInfo
 import os.path
 from qgis.utils import iface
 from PyQt4.Qt import QColor
@@ -38,8 +37,6 @@ from PyQt4.Qt import QColor
 import time
 
 import os
-
-
 
 class TopologicGeometryAdd:
     """QGIS Plugin Implementation."""
@@ -82,27 +79,23 @@ class TopologicGeometryAdd:
         # declare slot variables
         self.selectedLayer = None
         self.nodeLayer = None
-        self.edgeLayer = None
-        self.layerInfo = None # holds information of current selected layer
+        self.edgeLayer = None        
         
         # set db connector for topology tests
         self.topologyConnector = TopologyConnector()
                 
+        # set variables as typ array
         self.qgisLayerInformation = []
         self.postgresLayerInformation = []
-     
                 
         currentLayer = self.iface.mapCanvas().currentLayer()
         if currentLayer:
             self.listenLayerChanged(currentLayer)                 
                 
-        # set signal for layerchanged
+        # set signal for listenLayerChangged
         QObject.disconnect(self.iface.mapCanvas(), SIGNAL("currentLayerChanged(QgsMapLayer *)"), self.listenLayerChanged)
         QObject.connect(self.iface.mapCanvas(), SIGNAL("currentLayerChanged(QgsMapLayer *)"), self.listenLayerChanged)
-        
-        
-        print("RELOAD PLUGIN")
-
+                   
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -225,9 +218,6 @@ class TopologicGeometryAdd:
         listen signal if layer changed
         '''
         
-        #print("-------------------------")
-        #print("IN LISTEN LAYER CHANGED")
-        
         if not (self.nodeLayer and self.edgeLayer):
             for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
                 if aLayer.name() == u'edge':
@@ -238,24 +228,23 @@ class TopologicGeometryAdd:
         # disconnect signals 
         if self.selectedLayer and self.selectedLayer.shortName() :
  
-            self.selectedLayer.featureAdded.disconnect(self.listenLayer)   
-            #self.selectedLayer.beforeCommitChanges.disconnect()    
+            self.selectedLayer.featureAdded.disconnect(self.listenLayer)                
             self.selectedLayer.editingStopped.disconnect(self.editingStopped)
+            
+            #self.selectedLayer.beforeCommitChanges.disconnect()   
             #self.selectedLayer.featuresDeleted.disconnect() 
         
         if currentLayer and currentLayer.shortName():
             ''' set Signals '''
-            currentLayer.featureAdded.connect(self.listenLayer)            
-            #currentLayer.beforeCommitChanges.connect(self.featuresDeleted) 
+            currentLayer.featureAdded.connect(self.listenLayer)  
             currentLayer.editingStopped.connect(self.editingStopped)
+            
+            #currentLayer.beforeCommitChanges.connect(self.featuresDeleted) 
             #currentLayer.featuresDeleted.connect(self.featuresDeleted)
             
         # store new selected layer
-        self.selectedLayer = currentLayer   
-        
-        #print("SELECTED LAYER")
-        #print(self.selectedLayer.name())        
-        
+        self.selectedLayer = currentLayer    
+              
         
     def featuresDeleted(self):
         
@@ -274,6 +263,9 @@ class TopologicGeometryAdd:
         '''
         signal when editing is stopped 
         '''       
+        
+        msg = 'Listen Editing Stopped'
+        QgsMessageLog.logMessage(msg, "TopoPluginAdd")
        
         # add geomLayers for each postgresLayer
         self.addGeomLayers()
@@ -351,7 +343,7 @@ class TopologicGeometryAdd:
                 self.topologyConnector.setTopoGeometryData(systemId, properties)
                 
             except StopIteration:
-                print("Fehler")
+                raise Exception( "Fehler beim setzen des TopoInformationen..Abbruch")
                 
         # clear array
         self.postgresLayerInformation = []
@@ -474,7 +466,7 @@ class TopologicGeometryAdd:
                         i['geomLayerNodeFid'] = existingNodeId
                 
             except StopIteration:
-                print("FEHLER beim setzen des Geom Layer")
+                raise Exception( "Fehler beim setzen des Geom Layers / Node Layers..Abbruch")
             
         # insert Topo Informations in postgres DB
         self.insertGeomTopoInformations()
@@ -484,18 +476,11 @@ class TopologicGeometryAdd:
         '''
         add node(s) for each added layer
         '''
-        
+                
         # set Feature geomLayer
         feat = QgsFeature(self.nodeLayer.pendingFields())
         feat.setGeometry(qgis_geom)
         (result, outFeats) = self.nodeLayer.dataProvider().addFeatures([feat]) 
-                
-        #feat.setAttributes(['node_id', nextval('gas_topo.node_node_id_seq'::regclass)])
-        #feat.setAttributes(['containing_face', 111111111]) # vl. Feature ID vom aktiv Layer reinschreiben                
-        #feat.setGeometry(QgsGeometry.fromPoint(QgsPoint(4464012.2,5335163.8)))  
-            
-        # store geomLayerFid from geomLayer in postgresLayerInformation list
-        #i['geomLayerFid']  = outFeats[0].id()                
     
         # commit to stop editing the layer
         self.nodeLayer.commitChanges()
@@ -507,16 +492,10 @@ class TopologicGeometryAdd:
         # add layer to the legend
         QgsMapLayerRegistry.instance().addMapLayer(self.nodeLayer)
         
-        '''
-        if result == True:
-           # print("GEOM LAYER Gesetzt")
+        if result == False:
             
-            print("NEUER GEOM NODE EINGEFÜGT")
-            print(outFeats[0].id())
-            
-        else:
-            print("FEHLER BEIM GEOM LAYER SETZEN")
-        '''
+            raise Exception( "Fehler beim anlegen des Features für den NODE Layer..Abbruch")
+                
                           
         return outFeats[0].id()
     
@@ -536,21 +515,10 @@ class TopologicGeometryAdd:
         feat = QgsFeature(self.edgeLayer.pendingFields())
         feat = QgsFeature()
         feat.setGeometry(edgeGeom)
-       
-        feat.setAttributes([edge_id, firstGeneratedNodeId, lastGeneratedNodeId, an_edge_id, an_edge_id, an_edge_id, an_edge_id, 0 , 0])
         
-        ''' funkioniert so nicht - warum nicht ???
-        feat.setAttributes(['edge_id', edge_id]) # we have to set, i don't know why ????
-        feat.setAttributes(['start_node', firstGeneratedNodeId]) 
-        feat.setAttributes(['end_node', lastGeneratedNodeId]) 
-        feat.setAttributes(['next_left_node', an_edge_id]) 
-        feat.setAttributes(['abs_next_left_node', an_edge_id]) 
-        feat.setAttributes(['next_right_node', an_edge_id])   
-        feat.setAttributes(['abs_next_right_node', an_edge_id])
-        feat.setAttributes(['left_face', 0]) 
-        feat.setAttributes(['right_face', 0])
-        '''
-           
+        # set attributes for feature
+        feat.setAttributes([edge_id, firstGeneratedNodeId, lastGeneratedNodeId, an_edge_id, an_edge_id, an_edge_id, an_edge_id, 0 , 0])
+                           
         (result, outFeats) = self.edgeLayer.dataProvider().addFeatures([feat]) 
     
         # commit to stop editing the layer
@@ -563,15 +531,15 @@ class TopologicGeometryAdd:
         # add layer to the legend
         QgsMapLayerRegistry.instance().addMapLayer(self.edgeLayer)
         
-        '''
-        if result == True:
+        if result == False:
             
+            raise Exception( "Fehler beim anlegen des Features für den EDGE Layer..Abbruch")
+            
+        '''    
+        else:
             print("NEUER GEOM EDGE EINGEFÜGT")
             print(outFeats[0].id())
-            
-        else:
-            print("FEHLER BEIM EDGE LAYER SETZEN")
-        '''
+        '''  
                           
         return outFeats[0].id()
         
@@ -584,12 +552,9 @@ class TopologicGeometryAdd:
         get back fid from nodes with intersections 
         
         slowly working method # FIXME        
-        '''             
-      
-        
+        '''          
         spi = QgsSpatialIndex( self.nodeLayer.getFeatures() ) 
-        intersectIds = spi.intersects( geom.boundingBox() )
-        
+        intersectIds = spi.intersects( geom.boundingBox().buffer(1) )        
         
         #print("intersectIds !!")
         #print(intersectIds)
@@ -621,4 +586,24 @@ class TopologicGeometryAdd:
             # substitute with your code.
             pass
 
+
+    '''
+        QgsMessageLog.logMessage( 'adjust coordinates not successfull', 'TopoPluginAdd', 2)
+    
+        #feat.setAttributes(['node_id', nextval('gas_topo.node_node_id_seq'::regclass)])
+        #feat.setAttributes(['containing_face', 111111111]) # vl. Feature ID vom aktiv Layer reinschreiben                
+        #feat.setGeometry(QgsGeometry.fromPoint(QgsPoint(4464012.2,5335163.8))) 
+        
+         funkioniert so nicht - warum nicht ???
+        feat.setAttributes(['edge_id', edge_id]) # we have to set, i don't know why ????
+        feat.setAttributes(['start_node', firstGeneratedNodeId]) 
+        feat.setAttributes(['end_node', lastGeneratedNodeId]) 
+        feat.setAttributes(['next_left_node', an_edge_id]) 
+        feat.setAttributes(['abs_next_left_node', an_edge_id]) 
+        feat.setAttributes(['next_right_node', an_edge_id])   
+        feat.setAttributes(['abs_next_right_node', an_edge_id])
+        feat.setAttributes(['left_face', 0]) 
+        feat.setAttributes(['right_face', 0])
+    
+    '''
    

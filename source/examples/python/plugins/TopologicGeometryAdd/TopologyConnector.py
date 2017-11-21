@@ -7,7 +7,6 @@ import psycopg2
 from PyQt4.QtGui import QMessageBox
 from platform import node
 from __builtin__ import str
-from TopoLine import TopoLine
 
 
 class TopologyConnector():
@@ -96,7 +95,6 @@ class TopologyConnector():
         topoGeomId = layerProperties[0]
         layer_id = layerProperties[1]
         element_type = layerProperties[2] 
-                
         
         geomLayerNodeFid = properties['geomLayerNodeFid'] # fid from geomLayer            
         geomLayerEdgeFid = properties['geomLayerEdgeFid']
@@ -134,8 +132,8 @@ class TopologyConnector():
                 edge_data = "edge_data"
                 cur.execute("UPDATE " + schema + "." + str(edge_data) + " SET start_node = '" + str(geomLayerStartNodeFid) + "', end_node = '" + str(geomLayerEndNodeFid) + "' WHERE edge_id= '" + str(geomLayerEdgeFid) + "' ")  
                 
-                print("Aktualisiere Eintraege in edge_data Eintrag edge_id")
-                #print(geomLayerEdgeFid)
+                print("Aktualisiere Eintraege in der edge_data")
+                
                 
             # relations for nodes     
             if geomType == "node":
@@ -143,7 +141,7 @@ class TopologyConnector():
                 cur.execute("INSERT INTO " + schema + "." + str(TableName) + " VALUES ('" + str(topoGeomId) + "', '" + str(layer_id) + "', '" + str(geomLayerNodeFid) + "', '" + str(element_type) + "' ) ")
                 
                 print("INSERT RELATION NODE ENTRY !!")
-                #print(geomLayerNodeFid)
+                
             
             conn.commit()
             
@@ -174,8 +172,6 @@ class TopologyConnector():
             conn.commit()
             
             self.db_connection_close() 
-                
-            #print("UPDATE TUPLE !!")
             
             
     def getNextTopoGeomIdAndProperties(self, TableName):
@@ -194,13 +190,17 @@ class TopologyConnector():
             #self.db_connection_close() 
             
             if len(row) == 0:
-                print("Fehler DB: TOPOGEOD ID wurde nicht generiert")
-                return False
+                raise Exception( "Fehler: Es konnte keine TopoGeoId generiert werden....Abbruch")
+                #return False
             else:
                 return row 
             
            
-    def getAEdgeId(self):      
+        
+    def getAEdgeId(self):
+        '''
+        get next edge_id for insert a new feature in qgis
+        '''      
         
         schema = "gas_topo"
         geomTableName = "edge_data"        
@@ -215,7 +215,7 @@ class TopologyConnector():
             row = cur.fetchone()
             
             if len(row) == 0:
-                print("Fehler DB: TOPOGEOD ID wurde nicht generiert")
+                raise Exception( "Fehler: Es konnte keine edge_id gefunden werden....Abbruch")
                 return False
             else:
                 return row[0] 
