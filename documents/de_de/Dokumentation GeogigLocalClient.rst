@@ -55,7 +55,7 @@ Im Detail:
 *lib-qgis-commons*: 
 
 - Download der Sourcen von https://github.com/boundlessgeo/lib-qgis-commons
-- Kopie von ..\lib-qgis-commons\qgiscommons2 ins QGis Pluginverzeichnis (c:\Users\<user>\.qgis2\python\plugins)
+- Kopie von ..\\lib-qgis-commons\\qgiscommons2 ins QGis Pluginverzeichnis (c:\\Users\\<user>\\.qgis2\\python\\plugins)
 
 *qgis-geogiglight-plugin*
 
@@ -65,7 +65,7 @@ Im Detail:
 Dann installieren Sie das Vereinfachtes Geogig Plugin.
 
 - Download von https://github.com/SWM-IT/qgis-netze-gas
-- Kopie des Verzeichnisses ...\qgis-netze-gas\source\examples\python\plugins\GeogigLocalClient ins QGis Pluginverzeichnis (c:\Users\<user>\.qgis2\python\plugins)
+- Kopie des Verzeichnisses ...\\qgis-netze-gas\\source\\examples\\python\\plugins\\GeogigLocalClient ins QGis Pluginverzeichnis (c:\\Users\\<user>\\.qgis2\\python\\plugins)
 
 
 Schalten Sie im QGis die Plugins *GeoGig Client* und *Geogig Local Client* aktiv: ``Erweiterungen\Erweiterungen verwalten und installieren...'', Suche nach geogig, Häkchen vor den jeweiligen Plugins anhaken.
