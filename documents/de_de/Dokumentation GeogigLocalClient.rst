@@ -89,11 +89,12 @@ Es öffnet sich folgender Dialog:
 Mit den beiden Pulldownmenüs in der ersten Zeile können sie den Geogig Server sowie das gewünschen Repository auswählen. Diese müssen natürlich zuvor konfiguriert worden sein (vgl. ``Vorbereitung eines Repositiories``).
 
 Die weiteren Knöpfe der ertsen Zeile haben folgende Funktionen:
-- |BtnSync|       : Synchronisiert locale Änderungen und Änderungen auf dem Server.
-- |BtnMergeDown|  : Merged Änderungen des übergeordneten Branches zum aktuellen Branch
-- |BtnMergeUp|    : Merged Änderungen des aktuellen Branches zum übergeordneten Branch
-- |BtnRevert|     : Löscht lokale Änderungen, die noch nicht zum Server gesandt wurden
-- |BtnShowChanges|: Zeigt lokale Änderungen an, die noch nicht zum Server gesandt wurden
+
+| |BtnSync|       : Synchronisiert locale Änderungen und Änderungen auf dem Server.
+| |BtnMergeDown|  : Merged Änderungen des übergeordneten Branches zum aktuellen Branch
+| |BtnMergeUp|    : Merged Änderungen des aktuellen Branches zum übergeordneten Branch
+| |BtnRevert|     : Löscht lokale Änderungen, die noch nicht zum Server gesandt wurden
+| |BtnShowChanges|: Zeigt lokale Änderungen an, die noch nicht zum Server gesandt wurden
 
 .. |BtnSync|        image:: images/geogig/BtnSync.PNG
 .. |BtnMergeDown|   image:: images/geogig/BtnMergeDown.PNG
