@@ -103,3 +103,34 @@ Die weiteren Knöpfe der ersten Zeile haben folgende Funktionen:
 .. |BtnShowChanges| image:: images/geogig/BtnShowChanges.PNG
 
 
+Unter der Knopfzeile befindet sich das Fenster mit dem Branch Tree. Die Wurzel aller Branches ist ``master``. Von hier können untergeordnete Branches hierarchisch angelegt werden. Der aktuelle Branch ist durch einen fette und etwas größere Schrift hervorgehoben (im Snapshot oben ``B6``).
+Durch einen Rechtsklick auf einen Branch erhalten Sie folgendes Pulldownmenü:
+
+ .. image:: images/geogig/BranchesPulldown.PNG
+
+Die Funktionen darin sind:
+
+- **Goto this Branch**: Gehe mit allen Layern des Repositories zu diesem Branch und wähle diesen als aktuellen Branch. Eine Progressbar oberhalb der Karte zeigt den Fortschritt dieser Aktion (für jeden veränderten Layer, geht es einen Schritt weiter). Der gewählte Layer wird danach fett und mit etwas größeren Buchstaben als aktueller Layer dargestellt. Mergeaktionen beziehen sich nun auf diesen Branch.
+- **Create branch**: Erzeugt einen Unterbranch zum gewählten Branch. Beachte: Man kann auch einen Unterbranch zu einem andren Branch als dem aktuellen Branch erzeugen!
+- **Delete branch**: Lösche den gewählten Branch. Beachte: Der gewählte Branch muss nicht der aktuelle Branch sein. Ein Löschen von master ist nicht möglich. Besitzt ein Branch Unterbranches, so erfolgt eine zusätzliche Rückfrage an den Benutzer. Falls er zustimmt, wird der gewählte Branch und seine Unterbranches gelöscht.
+
+Anmerkung zur Branchhierarchie:
+
+	  In Geogig gibt es eigentlich keine Hierarchie unter den Branches. Alle Branches sind gleichberechtigt und daher kann der Benutzer auch von jedem Branch in jeden Branch mergen. Um die Bedienbarkeit des Plugins jedoch zu vereinfachen, haben wir hier eine Hierarchie eingefügt. Technisch wird das über eine Namenskonvention erreicht: Der Wurzelbranch ist ``master``. Branches mit "einfachen" Namen sind master direkt untergeordnet. Ein Branch darunter hat den Namane seines übergeordneten Branches mit folgender Notation im Namen eingebaut: "<eigener Name>_($<übergeordneter Branch$)". Im Plugin wird nur der <eigene Name> angezeigt.
+
+Unter dem Fenster mit dem Branchtree liegt das Fenster mit der Commithistorie. Wird im oberen Fenster ein Branch ausgewählt, so wird in diesem Fenster die Liste der Commits zu diesem Branch angezeigt. Durch einen Rechtsklick auf einen Commit erhalten Sie folgendes Pulldownmenü:
+
+ .. image:: images/geogig/CommitsPulldown.PNG
+
+Die Funktionen darin sind:
+
+- **Create branch from this commit**: Erzeugt einen Unterbranch zum ausgewählten Branch basierend auf dem selektierten Commit.
+- **Show changes of this commit**: Öffnet ein neues Menü mit allen Änderungen, die mit diesem Commit abgespeichert wurden.
+- **Show details of this commit**: Öffnet ein neues Menü mit Informationen zu diesem Commit, u.a. Autor und Datum.
+- **Create tag**: Erzeugt einen Tag zu diesem Commit
+- **Delete tag**: Löscht alle Tags, die diesem Commit angehängt waren.
+	  
+
+
+
+
