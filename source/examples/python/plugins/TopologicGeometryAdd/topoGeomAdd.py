@@ -20,10 +20,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL, pyqtSlot, QgsMessageLog
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QObject, SIGNAL, pyqtSlot
 from PyQt4.QtGui import QAction, QIcon, QMessageBox
 from qgis.core import QgsMapLayerRegistry, QgsFeatureRequest, QgsDataSourceURI, QgsWKBTypes, QGis, QgsVectorLayer, QgsFeature, QgsGeometry, QgsMessageLog, QgsSpatialIndex
-#from qgis.core import *
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
@@ -35,7 +34,6 @@ from qgis.utils import iface
 from PyQt4.Qt import QColor
 # time to check performance issues
 import time
-
 import os
 
 class TopologicGeometryAdd:
@@ -87,6 +85,7 @@ class TopologicGeometryAdd:
         # set variables as typ array
         self.qgisLayerInformation = []
         self.postgresLayerInformation = []
+        self.deletedQgisLayerInformation = []        
                 
         currentLayer = self.iface.mapCanvas().currentLayer()
         if currentLayer:
@@ -228,37 +227,63 @@ class TopologicGeometryAdd:
         # disconnect signals 
         if self.selectedLayer and self.selectedLayer.shortName() :
  
-            self.selectedLayer.featureAdded.disconnect(self.listenLayer)                
-            self.selectedLayer.editingStopped.disconnect(self.editingStopped)
-            
-            #self.selectedLayer.beforeCommitChanges.disconnect()   
-            #self.selectedLayer.featuresDeleted.disconnect() 
+            self.selectedLayer.featureAdded.disconnect(self.featureAdded)                
+            self.selectedLayer.editingStopped.disconnect(self.editingStopped)            
+            self.selectedLayer.beforeCommitChanges.disconnect(self.featuresDeleted)  
         
         if currentLayer and currentLayer.shortName():
             ''' set Signals '''
-            currentLayer.featureAdded.connect(self.listenLayer)  
+            currentLayer.featureAdded.connect(self.featureAdded)  
             currentLayer.editingStopped.connect(self.editingStopped)
-            
-            #currentLayer.beforeCommitChanges.connect(self.featuresDeleted) 
-            #currentLayer.featuresDeleted.connect(self.featuresDeleted)
+            currentLayer.beforeCommitChanges.connect(self.featuresDeleted) 
             
         # store new selected layer
         self.selectedLayer = currentLayer    
               
         
     def featuresDeleted(self):
+        '''
+        collect deleted fids for each layer
+        FIXME - we can only delete features for the actual selected layer
+        '''
         
-        print("IN featuresDeleted sIGANL ")
-    
         layer = self.selectedLayer 
         
         if layer.editBuffer():
-           ids = layer.editBuffer().deletedFeatureIds()
-           for feature in layer.dataProvider().getFeatures( QgsFeatureRequest().setFilterFids( ids ) ):
-               print(feature.id())
-               
+            ids = layer.editBuffer().deletedFeatureIds()
+            
+            if len(ids) > 0:
+               for feature in layer.dataProvider().getFeatures(QgsFeatureRequest().setFilterFids( ids )):
+                   
+                   # get systemid
+                   systemId = feature['system_id'] 
+                   
+                   # get geom type
+                   geom = feature.geometry()               
+                   if geom.type() == QGis.Point:
+                       geom_type = "node"
+                   
+                   elif geom.type() == QGis.Line:
+                        geom_type = "edge"
+                   
+                   '''     
+                   topoGeoId = self.topologyConnector.getTopoGeoIdFromFeature(self.selectedLayer.shortName(), systemId)
+                   if topoGeoId is not False:   
+                       self.deletedQgisLayerInformation.append({'system_id': systemId, 'topoGeoId': topoGeoId, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName(), 'geomType': geom_type})
+                  
+                   '''                       
+                   # store feature informations for database operations
+                   self.deletedQgisLayerInformation.append({'system_id': systemId, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName(), 'geomType': geom_type})
+                  
+            if len(self.deletedQgisLayerInformation) > 0:
+                # delete feature informations in database
+                self.topologyConnector.deleteFeatureInformations(self.deletedQgisLayerInformation)
         
-        
+                # repaint node and edge layer (refresh map)        
+                self.edgeLayer.triggerRepaint()
+                self.nodeLayer.triggerRepaint()   
+                            
+      
     def editingStopped(self):
         '''
         signal when editing is stopped 
@@ -268,13 +293,16 @@ class TopologicGeometryAdd:
         QgsMessageLog.logMessage(msg, "TopoPluginAdd")
        
         # add geomLayers for each postgresLayer
-        self.addGeomLayers()
+        self.addGeomLayers()       
+              
+        # clear array from method featuresDeleted
+        self.deletedQgisLayerInformation = []     
                        
         
     def checkIfLayerSelected(self):   
         '''
         check if a layer is selected
-        '''        
+        '''     
         
         toolname = "TopologicAdd"
 
@@ -306,7 +334,7 @@ class TopologicGeometryAdd:
           return
         
         
-    def listenLayer(self, fid):
+    def featureAdded(self, fid):
         '''
         callback for Signal addedFeature
         collect my added Features for later
@@ -347,7 +375,7 @@ class TopologicGeometryAdd:
                 
         # clear array
         self.postgresLayerInformation = []
-        
+                
         
     def addGeomLayers(self):
         '''
@@ -546,19 +574,28 @@ class TopologicGeometryAdd:
     
     def checkForExistingGeomNode(self, geom):
         '''
-        check for intersection between featureLayer geom (e.g. Hausanschluss)
-        and a node
+        check if geometry (bounding_box) from the featureLayer (e.g. Hausanschluss) within a node        
+        '''
         
-        get back fid from nodes with intersections 
+        featsPnt = self.nodeLayer.getFeatures(QgsFeatureRequest().setFilterRect(geom.boundingBox()))
+        for featPnt in featsPnt:
+             #iterate preselected point features and perform exact check with current point
+            if featPnt.geometry().within(geom):                
+                # give back fid from node
+                
+                print("Node gefunden: " + str(featPnt[0]))
+                return featPnt[0]
+            
+        return False
         
-        slowly working method # FIXME        
-        '''          
+        '''         
         spi = QgsSpatialIndex( self.nodeLayer.getFeatures() ) 
         intersectIds = spi.intersects( geom.boundingBox().buffer(1) )        
         
+            
         #print("intersectIds !!")
         #print(intersectIds)
-        
+        ''
         if len(intersectIds) == 0:
             return False
         
@@ -572,6 +609,7 @@ class TopologicGeometryAdd:
             raise Exception( "Fehler: es wurden zu viele node_ids gefunden")
             #print("Fehler: es wurden zu viele node_ids gefunden")
             #return None
+        '''
         
             
     def run(self):
