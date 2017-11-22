@@ -10,22 +10,22 @@
 Einleitung
 ----------
 
-Das *Vereinfachte Geogig Plugin* stellt eine Alternative zum vorhandenen Geogig Plugin dar (vgl. https://github.com/boundlessgeo/qgis-geogiglight-plugin). Es ist für die tägliche Arbeit eines Efassers konzipiert. Er kann damit:
+Das *Vereinfachte Geogig Plugin* stellt eine Alternative zum vorhandenen Geogig Plugin dar (vgl. https://github.com/boundlessgeo/qgis-geogiglight-plugin). Es ist für die tägliche Arbeit eines Erfassers konzipiert. Er kann damit:
 
 - Änderungen einchecken zwischen den lokalen GeoPackage Datenbanken und dem Serverrepository synchronisieren.
 - Änderungen verfolgen und Konflikte bearbeiten.
 - Branches anlegen und zwischen den Branches navigieren.
 
-Ausdrücklich nicht vorgesehen sind adminsitrative Arbeiten wie:
+Ausdrücklich nicht vorgesehen sind administrative Arbeiten wie:
 
 - Konfiguration der Verbindung zum Server sowie des/der Repositories.
 - Herunterladen der gewünschten Layer zum aktuellen Projekt.
 
 Gegenüber dem vorhandenen Geogig Plugin gibt es folgende Vereinfachungen für den Benutzer:
 
-- Der aktuelle zuletzt gewählte Branch wird persitent gespeichert. Er steht auch nach einem Neustart zur Verfügung.
+- Der aktuelle, zuletzt gewählte Branch wird persistent gespeichert. Er steht auch nach einem Neustart zur Verfügung.
 - Ein Commit wird immer in den aktuellen Branch gemacht.
-- Merges von und zu dem aktuellen Branch sind nur zu einem für den jeweiligen Branch definierten übergeordneten Branch möglich. (Geogig erlaubt das Merggen zwischen beliebigen Branches.)
+- Merges von und zu dem aktuellen Branch sind nur zu einem für den jeweiligen Branch definierten übergeordneten Branch möglich. (Geogig erlaubt das Mergen zwischen beliebigen Branches.)
 - Alle Commit- und Mergeoperationen sowie die Navigation zwischen den Branches werden immer auf allen Layern des jeweiligen Repositories ausgeführt. (Mit dem vorhandenen Geogig Plugin muss das für jeden Layer einzeln gemacht werden.)
 
 
@@ -68,7 +68,7 @@ Dann installieren Sie das Vereinfachtes Geogig Plugin.
 - Kopie des Verzeichnisses ...\qgis-netze-gas\source\examples\python\plugins\GeogigLocalClient ins QGis Pluginverzeichnis (c:\Users\<user>\.qgis2\python\plugins)
 
 
-Schalten Sie im QGis die Plugins *GeoGig Client* und *Geogig Local Client* aktiv: ``Erweiterungen\Erweiterungen verwalten und installieren...'', Suche nach geogig, Häckchen vor den jeweilgen Plugins anhaken.
+Schalten Sie im QGis die Plugins *GeoGig Client* und *Geogig Local Client* aktiv: ``Erweiterungen\Erweiterungen verwalten und installieren...'', Suche nach geogig, Häkchen vor den jeweiligen Plugins anhaken.
 
 
 Vorbereitung eines Repositiories
@@ -86,13 +86,13 @@ Es öffnet sich folgender Dialog:
  .. image:: images/geogig/GeoGigManagerDialog.png
 
 
-Mit den beiden Pulldownmenüs in der ersten Zeile können sie den Geogig Server sowie das gewünschen Repository auswählen. Diese müssen natürlich zuvor konfiguriert worden sein (vgl. ``Vorbereitung eines Repositiories``).
+Mit den beiden Pulldownmenüs in der ersten Zeile können Sie den Geogig Server sowie das gewünschte Repository auswählen. Diese müssen natürlich zuvor konfiguriert worden sein (vgl. ``Vorbereitung eines Repositiories``).
 
-Die weiteren Knöpfe der ertsen Zeile haben folgende Funktionen:
+Die weiteren Knöpfe der ersten Zeile haben folgende Funktionen:
 
-| |BtnSync|       : Synchronisiert locale Änderungen und Änderungen auf dem Server.
-| |BtnMergeDown|  : Merged Änderungen des übergeordneten Branches zum aktuellen Branch
-| |BtnMergeUp|    : Merged Änderungen des aktuellen Branches zum übergeordneten Branch
+| |BtnSync|       : Synchronisiert lokale Änderungen und Änderungen auf dem Server.
+| |BtnMergeDown|  : Merge Änderungen des übergeordneten Branches zum aktuellen Branch
+| |BtnMergeUp|    : Merge Änderungen des aktuellen Branches zum übergeordneten Branch
 | |BtnRevert|     : Löscht lokale Änderungen, die noch nicht zum Server gesandt wurden
 | |BtnShowChanges|: Zeigt lokale Änderungen an, die noch nicht zum Server gesandt wurden
 
