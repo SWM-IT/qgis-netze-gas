@@ -86,8 +86,6 @@ class TopologyConnector():
         insert relation entry between layer table and node or edge table
         '''
         
-        #print("IN createRelationTableEntry")
-        
         schema = "gas_topo" 
         TableName = "relation"         
         
@@ -101,18 +99,6 @@ class TopologyConnector():
         geomType = properties['geomType'] 
         geomLayerStartNodeFid = properties['geomLayerStartNodeFid']
         geomLayerEndNodeFid= properties['geomLayerEndNodeFid']
-          
-        '''
-        print("------")
-        print("TOPGEOMID")
-        print(topoGeomId)
-        print("LAYER ID ")
-        print(layer_id)
-        print("ELEMENT TYPE")
-        print(element_type)
-        #print("geomLayerFid")
-        #print(geomLayerFid)
-        '''
         
         conn = self.db_connection(None, None, None, None)
         if conn:
@@ -124,7 +110,7 @@ class TopologyConnector():
                 
                 cur.execute("INSERT INTO " + schema + "." + str(TableName) + " VALUES ('" + str(topoGeomId) + "', '" + str(layer_id) + "', '" + str(geomLayerEdgeFid) + "', '" + str(element_type) + "' ) ")
                  
-                print("INSERT RELATION EDGE ENTRY !!")
+                print("insert relation entry for edge")
                 
                 '''
                 update start_node / end_node on table edge_data for edge_id
@@ -132,7 +118,7 @@ class TopologyConnector():
                 edge_data = "edge_data"
                 cur.execute("UPDATE " + schema + "." + str(edge_data) + " SET start_node = '" + str(geomLayerStartNodeFid) + "', end_node = '" + str(geomLayerEndNodeFid) + "', next_left_edge = '" + str(geomLayerEdgeFid) + "', abs_next_left_edge = '" + str(geomLayerEdgeFid) + "', next_right_edge = '" + str(geomLayerEdgeFid) + "', abs_next_right_edge = '" + str(geomLayerEdgeFid) + "' WHERE edge_id= '" + str(geomLayerEdgeFid) + "' ")  
                 
-                print("Aktualisiere Eintraege in der edge_data")
+                print("aktualisiere Eintraege in der edge_data zur edge_id")
                 
                 
             # relations for nodes     
@@ -140,7 +126,7 @@ class TopologyConnector():
             
                 cur.execute("INSERT INTO " + schema + "." + str(TableName) + " VALUES ('" + str(topoGeomId) + "', '" + str(layer_id) + "', '" + str(geomLayerNodeFid) + "', '" + str(element_type) + "' ) ")
                 
-                print("INSERT RELATION NODE ENTRY !!")
+                print("insert relation entry for node")
                 
             
             conn.commit()
@@ -159,10 +145,7 @@ class TopologyConnector():
         layer_id = properties[1]
         element_type = properties[2]
         topology_id = properties[3]
-        
-        #print("NEUE TOPOGEOID")
-        #print(topoGeomId)
-        
+             
         conn = self.db_connection(None, None, None, None)
         if conn:
                     
@@ -189,35 +172,11 @@ class TopologyConnector():
             
             #self.db_connection_close() 
             
-            if len(row) == 0:
-                raise Exception( "Fehler: Es konnte keine TopoGeoId generiert werden....Abbruch")
-                #return False
-            else:
-                return row 
-            
-           
-           
-    def getTopoGeoIdFromFeature(self, TableName, systemId):
-        '''
-        get next edge_id for insert a new feature in qgis
-        '''      
-        
-        schema = "ga"
-                
-        conn = self.db_connection(None, None, None, None)
-        if conn:  
-            
-            cur = conn.cursor()  
-                        
-            # get next edge_id 
-            cur.execute("""SELECT (g).id FROM """ + schema + """.""" + str(TableName) + """ WHERE system_id=""" + str(systemId) + """ """) 
-            row = cur.fetchone()
-            
-            if len(row) == 0:
-                raise Exception( "Fehler: Es konnte keine TopoGeoId ermittelt werden....Abbruch")
+            if len(row) == 0:     
+                raise Exception("Fehler: Es konnte keine TopoGeoId generiert werden....Abbruch")
                 return False
             else:
-                return row[0] 
+                return row     
             
         
     def getAEdgeId(self):
@@ -231,8 +190,8 @@ class TopologyConnector():
         conn = self.db_connection(None, None, None, None)
         if conn:  
             
-            cur = conn.cursor()  
-                        
+            cur = conn.cursor() 
+            
             # get next edge_id 
             cur.execute("""SELECT max(edge_id) FROM """ + schema + """.""" + str(geomTableName) + """ LIMIT 1""") 
             row = cur.fetchone()
@@ -263,8 +222,6 @@ class TopologyConnector():
                 geomType = deletedQgisLayerInformation['geomType']
                 layerTableName = deletedQgisLayerInformation['shortname']  
                 
-                #print("LAYERTABLENAME " + str(layerTableName))
-                
                 if geomType == "node":
                     element_type = 1
                     
@@ -276,22 +233,22 @@ class TopologyConnector():
                 cur.execute("""SELECT (g).id FROM """ + schema + """.""" + str(layerTableName) + """ WHERE system_id = """ + str(system_id) + """ LIMIT 1 """) 
                 row = cur.fetchone()
                 
-                if row == None:
+                if row == None or row[0] == None:
                     print("Fehler: Datensatz topoGeoId konnte nicht gefunden werden....gehe weiter")
-                    continue
+                    continue        
                 
                 elif len(row) > 0:
                     
                     # store topoGeoId from deleted feature
                     old_topoGeoId = row[0] 
                     
-                    print("GEFUNDENE TOPOGEOID " + str(old_topoGeoId))
+                    print("gefundene topogeoid " + str(old_topoGeoId))
                     
                     schema = "gas_topo" 
                     cur.execute("""SELECT element_id FROM """ + schema + """.""" + str(relationTableName) + """ WHERE topogeo_id = """ + str(old_topoGeoId) + """ AND element_type = """ + str(element_type) + """ """) 
                     row = cur.fetchone()
                     
-                    if row == None:
+                    if row == None or row[0] == None:
                         print("Fehler: Datensatz element_id konnte nicht gefunden werden....gehe weiter")
                         continue
                     
@@ -302,21 +259,21 @@ class TopologyConnector():
                             print("keine element_id gefunden....gehe weiter")
                             continue
                         
-                        print("GEFUNDENE ELEMENT ID " + str(old_element_id))
+                        print("gefundene element_id " + str(old_element_id))
                         
                         if geomType == "node":
                             
                             cur.execute("""SELECT edge_id FROM """ + schema + """.""" + str(EdgeTableName) + """ WHERE start_node = """ + str(old_element_id) + """ or end_node = """ + str(old_element_id) + """ """) 
                             row = cur.fetchone()
                             
-                            if row == None:                                
+                            if row == None or row[0] == None:                                
                                 
                                 # delete node entry
                                 cur.execute("""DELETE FROM """ + schema + """.""" + str(NodeTableName) + """ WHERE node_id = """ + str(old_element_id) + """ """) 
-                                print("NODE Geloescht !!")
+                                print("node geloescht !!")
                                 
                             else:
-                                print("NODE nicht geloescht da dieser noch verwendet wird !!")
+                                print("node nicht geloescht da dieser noch verwendet wird !!")
                             
                             # delete relation entry between node and feature                        
                             cur.execute("""DELETE FROM """ + schema + """.""" + str(relationTableName) + """ WHERE element_id = """ + str(old_element_id) + """ """) 
@@ -331,8 +288,12 @@ class TopologyConnector():
                             
                             # delete edge_data entry - musst delete entry before delete a node
                             cur.execute("""DELETE FROM """ + schema + """.""" + str(EdgeTableName) + """ WHERE edge_id = """ + str(old_element_id) + """ """) 
+                                  
+                            if row == None or row[0] == None:
+                                
+                                print("keinen Datensatz zu start_node oder end_node gefunden !!")
                                                          
-                            if len(row) > 0:
+                            elif len(row) > 0:
                             
                                 start_node = row[0]
                                 end_node = row[1]
@@ -341,20 +302,20 @@ class TopologyConnector():
                                 cur.execute("""SELECT topogeo_id, layer_id, element_id, element_type FROM """ + schema + """.""" + str(relationTableName) + """ WHERE element_id = """ + str(start_node) + """ """) 
                                 row = cur.fetchone()
                                 
-                                if row == None:
+                                if row == None or row[0] == None:
                                     
                                     cur.execute("""DELETE FROM """ + schema + """.""" + str(NodeTableName) + """ WHERE node_id = """ + str(start_node) + """ """) 
-                                    print("loesche START NODE VON DER EDGE MIT")
+                                    print("loesche start_node vor der edge")
                              
                                 # check for end_node, when if not exist delete node in table node
                                 cur.execute("""SELECT topogeo_id, layer_id, element_id, element_type FROM """ + schema + """.""" + str(relationTableName) + """ WHERE element_id = """ + str(end_node) + """ """) 
                                 row = cur.fetchone()
                                 
-                                if row == None:
+                                if row == None or row[0] == None:
                                     
                                     cur.execute("""DELETE FROM """ + schema + """.""" + str(NodeTableName) + """ WHERE node_id = """ + str(end_node) + """ """) 
                              
-                                    print("loesche END NODE VON DER EDGE MIT")
+                                    print("loesche end_node vor der edge")
                                     
                         
                         print("Eintraege geloescht zu System id " + str(system_id))

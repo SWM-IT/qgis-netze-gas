@@ -229,13 +229,16 @@ class TopologicGeometryAdd:
  
             self.selectedLayer.featureAdded.disconnect(self.featureAdded)                
             self.selectedLayer.editingStopped.disconnect(self.editingStopped)            
-            self.selectedLayer.beforeCommitChanges.disconnect(self.featuresDeleted)  
+            self.selectedLayer.beforeCommitChanges.disconnect(self.featuresDeleted)
+            #currentLayer.beforeCommitChanges.disconnect(self.featureAdded)
+              
         
         if currentLayer and currentLayer.shortName():
             ''' set Signals '''
             currentLayer.featureAdded.connect(self.featureAdded)  
             currentLayer.editingStopped.connect(self.editingStopped)
             currentLayer.beforeCommitChanges.connect(self.featuresDeleted) 
+            #currentLayer.beforeCommitChanges.connect(self.featureAdded) 
             
         # store new selected layer
         self.selectedLayer = currentLayer    
@@ -253,7 +256,7 @@ class TopologicGeometryAdd:
             ids = layer.editBuffer().deletedFeatureIds()
             
             if len(ids) > 0:
-               for feature in layer.dataProvider().getFeatures(QgsFeatureRequest().setFilterFids( ids )):
+               for feature in layer.dataProvider().getFeatures(QgsFeatureRequest().setFilterFids(ids)):
                    
                    # get systemid
                    systemId = feature['system_id'] 
@@ -265,13 +268,7 @@ class TopologicGeometryAdd:
                    
                    elif geom.type() == QGis.Line:
                         geom_type = "edge"
-                   
-                   '''     
-                   topoGeoId = self.topologyConnector.getTopoGeoIdFromFeature(self.selectedLayer.shortName(), systemId)
-                   if topoGeoId is not False:   
-                       self.deletedQgisLayerInformation.append({'system_id': systemId, 'topoGeoId': topoGeoId, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName(), 'geomType': geom_type})
-                  
-                   '''                       
+                        
                    # store feature informations for database operations
                    self.deletedQgisLayerInformation.append({'system_id': systemId, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName(), 'geomType': geom_type})
                   
@@ -288,9 +285,6 @@ class TopologicGeometryAdd:
         '''
         signal when editing is stopped 
         '''       
-        
-        msg = 'Listen Editing Stopped'
-        QgsMessageLog.logMessage(msg, "TopoPluginAdd")
        
         # add geomLayers for each postgresLayer
         self.addGeomLayers()       
@@ -339,7 +333,7 @@ class TopologicGeometryAdd:
         callback for Signal addedFeature
         collect my added Features for later
         '''
-                    
+          
         # fetch not commited features
         if fid < 0:
             #self.qgisLayerFIDS.append(fid)
@@ -348,6 +342,7 @@ class TopologicGeometryAdd:
             # commited features            
             self.postgresLayerInformation.append({'fid': fid, 'layername': self.selectedLayer.name(), 'shortname': self.selectedLayer.shortName()})
       
+    
         
     def insertGeomTopoInformations(self):
         '''
@@ -380,7 +375,7 @@ class TopologicGeometryAdd:
     def addGeomLayers(self):
         '''
         set topoGeom Objects for each layer
-        '''         
+        ''' 
         
         for i in self.postgresLayerInformation:
             
@@ -400,7 +395,7 @@ class TopologicGeometryAdd:
             # get right qgis layer            
             for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
                 if aLayer.name() == i['layername']:
-                    featureLayer = aLayer 
+                    featureLayer = aLayer
             
             iterator = featureLayer.getFeatures(QgsFeatureRequest().setFilterFid(featureID))
             try:                
@@ -496,6 +491,7 @@ class TopologicGeometryAdd:
             except StopIteration:
                 raise Exception( "Fehler beim setzen des Geom Layers / Node Layers..Abbruch")
             
+            
         # insert Topo Informations in postgres DB
         self.insertGeomTopoInformations()
         
@@ -523,7 +519,7 @@ class TopologicGeometryAdd:
         if result == False:
             
             raise Exception( "Fehler beim anlegen des Features für den NODE Layer..Abbruch")
-                
+        
                           
         return outFeats[0].id()
     
@@ -532,44 +528,45 @@ class TopologicGeometryAdd:
         '''
         add edge for added layer
         '''
+        
         # FIX ME
         # get dummy edge_id from DB while without an existing edge_id
         # we cannot commit a edge        
         an_edge_id = self.topologyConnector.getAEdgeId()
-        edge_id = an_edge_id+1 # new edgeId for entry
-        ########
         
-        # set Feature geomLayer
-        feat = QgsFeature(self.edgeLayer.pendingFields())
-        feat = QgsFeature()
-        feat.setGeometry(edgeGeom)
+        if getAEdgeId is False:
+            
+            return False
         
-        # set attributes for feature
-        feat.setAttributes([edge_id, firstGeneratedNodeId, lastGeneratedNodeId, an_edge_id, an_edge_id, an_edge_id, an_edge_id, 0 , 0])
+        else:         
+            edge_id = an_edge_id+1 # new edgeId for entry
+            ########
+        
+            # set Feature geomLayer
+            feat = QgsFeature(self.edgeLayer.pendingFields())
+            feat = QgsFeature()
+            feat.setGeometry(edgeGeom)
+        
+            # set attributes for feature
+            feat.setAttributes([edge_id, firstGeneratedNodeId, lastGeneratedNodeId, an_edge_id, an_edge_id, an_edge_id, an_edge_id, 0 , 0])
                            
-        (result, outFeats) = self.edgeLayer.dataProvider().addFeatures([feat]) 
+            (result, outFeats) = self.edgeLayer.dataProvider().addFeatures([feat]) 
     
-        # commit to stop editing the layer
-        self.edgeLayer.commitChanges()
+            # commit to stop editing the layer
+            self.edgeLayer.commitChanges()
             
-        # update layer's extent when new features have been added
-        # because change of extent in provider is not propagated to the layer
-        self.edgeLayer.updateExtents()
+            # update layer's extent when new features have been added
+            # because change of extent in provider is not propagated to the layer
+            self.edgeLayer.updateExtents()
         
-        # add layer to the legend
-        QgsMapLayerRegistry.instance().addMapLayer(self.edgeLayer)
+            # add layer to the legend
+            QgsMapLayerRegistry.instance().addMapLayer(self.edgeLayer)
         
-        if result == False:
+            if result == False:
             
-            raise Exception( "Fehler beim anlegen des Features für den EDGE Layer..Abbruch")
-            
-        '''    
-        else:
-            print("NEUER GEOM EDGE EINGEFÜGT")
-            print(outFeats[0].id())
-        '''  
+                raise Exception("Fehler beim anlegen des Features für den EDGE Layer..Abbruch")
                           
-        return outFeats[0].id()
+            return outFeats[0].id()
         
     
     def checkForExistingGeomNode(self, geom):
@@ -580,36 +577,13 @@ class TopologicGeometryAdd:
         featsPnt = self.nodeLayer.getFeatures(QgsFeatureRequest().setFilterRect(geom.boundingBox()))
         for featPnt in featsPnt:
              #iterate preselected point features and perform exact check with current point
-            if featPnt.geometry().within(geom):                
-                # give back fid from node
-                
+            if featPnt.geometry().within(geom):
+                                
+                # give back fid from node                
                 print("Node gefunden: " + str(featPnt[0]))
                 return featPnt[0]
             
         return False
-        
-        '''         
-        spi = QgsSpatialIndex( self.nodeLayer.getFeatures() ) 
-        intersectIds = spi.intersects( geom.boundingBox().buffer(1) )        
-        
-            
-        #print("intersectIds !!")
-        #print(intersectIds)
-        ''
-        if len(intersectIds) == 0:
-            return False
-        
-        elif len(intersectIds) == 1:
-            
-            #print("Bereits ein Node vorhanden")
-            #print(intersectIds[0])
-            return intersectIds[0]
-        
-        else:
-            raise Exception( "Fehler: es wurden zu viele node_ids gefunden")
-            #print("Fehler: es wurden zu viele node_ids gefunden")
-            #return None
-        '''
         
             
     def run(self):
@@ -642,6 +616,10 @@ class TopologicGeometryAdd:
         feat.setAttributes(['abs_next_right_node', an_edge_id])
         feat.setAttributes(['left_face', 0]) 
         feat.setAttributes(['right_face', 0])
-    
+        
+        
+        # intersections     
+        spi = QgsSpatialIndex( self.nodeLayer.getFeatures() ) 
+        intersectIds = spi.intersects( geom.boundingBox().buffer(1) ) 
     '''
    
