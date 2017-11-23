@@ -90,7 +90,7 @@ Mit den beiden Pulldownmenüs in der ersten Zeile können Sie den Geogig Server so
 
 Die weiteren Knöpfe der ersten Zeile haben folgende Funktionen:
 
-| |BtnSync|       : Synchronisiert lokale Änderungen und Änderungen auf dem Server.
+| |BtnSync|       : Synchronisiert lokale Änderungen des aktuellen Branches und Änderungen auf dem Server.
 | |BtnMergeDown|  : Merge Änderungen des übergeordneten Branches zum aktuellen Branch
 | |BtnMergeUp|    : Merge Änderungen des aktuellen Branches zum übergeordneten Branch
 | |BtnRevert|     : Löscht lokale Änderungen, die noch nicht zum Server gesandt wurden
@@ -104,15 +104,15 @@ Die weiteren Knöpfe der ersten Zeile haben folgende Funktionen:
 
 
 Unter der Knopfzeile befindet sich das Fenster mit dem Branch Tree. Die Wurzel aller Branches ist ``master``. Von hier können untergeordnete Branches hierarchisch angelegt werden. Der aktuelle Branch ist durch einen fette und etwas größere Schrift hervorgehoben (im Snapshot oben ``B6``).
-Durch einen Rechtsklick auf einen Branch erhalten Sie folgendes Pulldownmenü:
+Durch einen Rechtsklick auf einen Branch erhalten Sie folgendes Popupmenü:
 
  .. image:: images/geogig/BranchesPulldown.PNG
 
 Die Funktionen darin sind:
 
-- **Goto this Branch**: Gehe mit allen Layern des Repositories zu diesem Branch und wähle diesen als aktuellen Branch. Eine Progressbar oberhalb der Karte zeigt den Fortschritt dieser Aktion (für jeden veränderten Layer, geht es einen Schritt weiter). Der gewählte Layer wird danach fett und mit etwas größeren Buchstaben als aktueller Layer dargestellt. Mergeaktionen beziehen sich nun auf diesen Branch.
-- **Create branch**: Erzeugt einen Unterbranch zum gewählten Branch. Beachte: Man kann auch einen Unterbranch zu einem andren Branch als dem aktuellen Branch erzeugen!
-- **Delete branch**: Lösche den gewählten Branch. Beachte: Der gewählte Branch muss nicht der aktuelle Branch sein. Ein Löschen von master ist nicht möglich. Besitzt ein Branch Unterbranches, so erfolgt eine zusätzliche Rückfrage an den Benutzer. Falls er zustimmt, wird der gewählte Branch und seine Unterbranches gelöscht.
+- **Goto this Branch**: Gehe mit allen Layern des Repositories zu diesem Branch und wähle diesen als aktuellen Branch. Eine Progressbar oberhalb der Karte zeigt den Fortschritt dieser Aktion (für jeden veränderten Layer, geht es einen Schritt weiter). Der gewählte Branch wird danach fett und mit etwas größeren Buchstaben als aktueller Branch dargestellt. Merge- ind Synchronisationsaktionen beziehen sich nun auf diesen Branch.
+- **Create branch**: Erzeugt einen Unterbranch zum gewählten Branch. Beachte: Man kann auch einen Unterbranch zu einem anderen Branch als dem aktuellen Branch erzeugen!
+- **Delete branch**: Lösche den gewählten Branch. Beachte: Der gewählte Branch muss nicht der aktuelle Branch sein. Ein Löschen von ``master`` ist nicht möglich. Besitzt ein Branch Unterbranches, so erfolgt eine zusätzliche Rückfrage an den Benutzer. Falls er zustimmt, wird der gewählte Branch und seine Unterbranches gelöscht.
 
 Anmerkung zur Branchhierarchie:
 
