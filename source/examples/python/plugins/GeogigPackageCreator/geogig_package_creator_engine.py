@@ -25,18 +25,23 @@ import sys
 import zipfile
 
 from qgis.core import QgsProject
+from qgis.PyQt.QtCore import pyqtSignal, QObject
 
 from geogig.tools.layertracking import (readTrackedLayers, tracked)
 from geogig.tools.utils import (parentReposFolder)
 
-class GeogigPackageCreatorEngine(object):
+class GeogigPackageCreatorEngine(QObject):
     
     ARCHIVE_FOLDER_DATABASES = 'Databases'
     ARCHIVE_FOLDER_PROJECT   = 'Project'
     ARCHIVE_FOLDER_PLUGINS   = 'Plugins'
     ARCHIVE_FOLDER_CONFIG    = 'GeoigConfig'
     
+    progressChanged = pyqtSignal(int, str)
+    
+    
     def __init__(self):
+        QObject.__init__(self)
         self.archiveFile = None
         
 
@@ -61,8 +66,13 @@ class GeogigPackageCreatorEngine(object):
         
         self._prepareArchiveFile(fileName)
         
+        
+        #self.progressChanged.emit(0, "Storing databases")
+
         if withDatabases:
             self.archiveDatabases()
+            
+        self.progressChanged.emit(90, "Storing Project")
             
         if withProject:
             self.archiveProject()
@@ -74,6 +84,8 @@ class GeogigPackageCreatorEngine(object):
             self.archivePlugins()
             
         self._closeArchiveFile()
+        
+        self.progressChanged.emit(100, "Done")
         
     
     def _prepareArchiveFile(self, fileName):
@@ -88,9 +100,18 @@ class GeogigPackageCreatorEngine(object):
         
     def archiveDatabases(self):
         """I zip all managed geo package files to the sub folder ARCHIVE_FOLDER_DATABASES of the new package zip"""
+        nbDatabase = 0
+        nbDone     = 0
         for file in self._getTrackedPaths():
+            if os.path.exists(file): nbDatabase += 1 
+        
+        for file in self._getTrackedPaths():
+            self.progressChanged.emit(-1, "File: " + os.path.basename(file))
             self._doArchiveFile(file, os.path.join(self.ARCHIVE_FOLDER_DATABASES, 
-                                                  os.path.dirname(os.path.relpath(file, self._databaseFolder())))) 
+                                                  os.path.dirname(os.path.relpath(file, self._databaseFolder()))))
+            nbDone += 1 
+            progress = round(nbDone/float(nbDatabase) * 100)
+            self.progressChanged.emit(progress, "File: " + os.path.basename(file))
                                 
 
     def archiveProject(self):

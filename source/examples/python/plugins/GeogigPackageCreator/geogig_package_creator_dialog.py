@@ -63,10 +63,21 @@ class GeogigPackageCreatorDialog(QtGui.QDialog, FORM_CLASS):
 
     def createPackage(self):
             Engine = GeogigPackageCreatorEngine()
+            Engine.progressChanged.connect(self.on_progress)
             Engine.run(self.lineEditFileName.text(), 
                        withDatabases    = self.cbDatabase.isChecked(),
                        withProject      = self.cbQgisProject.isChecked(), 
                        withConfiguration= self.cbGeogigConfig.isChecked(), 
                        withPlugins      = self.cbGeogigPlugins.isChecked())
+            
+            
+    def on_progress(self, progressValue, progressString):
+        
+        # If a negative value is given, I leave the progress as it is.
+        # Nice feature, if I only want to change the label text.
+        if progressValue > 0:
+            self.progressBar.setValue(progressValue) 
+
+        self.progressLabel.setText(progressString)
             
             
