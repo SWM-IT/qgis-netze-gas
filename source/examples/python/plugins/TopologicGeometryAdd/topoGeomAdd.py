@@ -534,7 +534,7 @@ class TopologicGeometryAdd:
         # we cannot commit a edge        
         an_edge_id = self.topologyConnector.getAEdgeId()
         
-        if getAEdgeId is False:
+        if an_edge_id is False:
             
             return False
         

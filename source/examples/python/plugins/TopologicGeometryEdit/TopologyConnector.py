@@ -62,6 +62,27 @@ class TopologyConnector():
         '''
         self.layerDbInfo = aLayerDbInfo
     
+    def primaryKey(self, fullTableName):
+        '''
+        return the primary key for fullTableName
+        '''
+        pKey = "system_id"
+        #'''
+        if fullTableName:
+            conn = self.db_connection(None, None, None, None)
+            if conn:
+                cur = conn.cursor()
+                
+                cur.execute("""SELECT pg_attribute.attname FROM pg_index, pg_class, pg_attribute WHERE pg_class.oid = '""" + str(fullTableName) + """'::regclass AND indrelid = pg_class.oid AND pg_attribute.attrelid = pg_class.oid AND pg_attribute.attnum = any(pg_index.indkey) AND indisprimary""")
+                
+                rows = cur.fetchall()
+                
+                if len(rows) == 1:
+                    pKey = rows[0][0]
+        
+        #'''                
+        return pKey 
+    
     def all_edges_for_node(self, nodeId):
         '''
         returns all connected edges to a node
@@ -135,73 +156,77 @@ class TopologyConnector():
         '''
         returns the topology node data related to the given point object
         '''
-        aPointId = aPointObject.attribute("system_id")
-        if self.layerDbInfo and aPointId:
-            # get db connection
-            conn = self.db_connection(None, None, None, None)
-            if conn:
-                nodeData = None
-                # get db entry for point object
-                # exemplary house connection table - should be retrieved from selected layer
-                cur = conn.cursor()
-                #haTableName = self.layerDbInfo.getFullTableName() # "ga.g_hausanschluss"
-                gTableName = self.layerDbInfo.getTable()
-                fullTableName = "ga." + gTableName
-                reTableName = "gas_topo.relation"
-                topoTableName = "topology.layer"
-                
-                cur.execute("""SELECT h.topology_id, h.schema_name, h.table_name, f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + topoTableName + """ h WHERE e.system_id = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
-                
-                rows = cur.fetchall()
-                
-                # should be only one
-                if len(rows) > 0:
-                    row = rows[0]
-                    aTopoPoint = TopoPoint()
-                    aTopoPoint.setTopologyId(row[0])
-                    aTopoPoint.setSchemaName(row[1])
-                    aTopoPoint.setTableName(row[2])
-                    aTopoPoint.setNodeId(row[3])
-                    nodeData = aTopoPoint
-                # close connection
-                #self.db_connection_close()
-                
-                return nodeData
+        if self.layerDbInfo:
+            gTableName = self.layerDbInfo.getTable()
+            fullTableName = "ga." + gTableName
+            primaryKey = self.primaryKey(fullTableName)
+            aPointId = aPointObject.attribute(primaryKey)
+            if aPointId:
+                # get db connection
+                conn = self.db_connection(None, None, None, None)
+                if conn:
+                    nodeData = None
+                    # get db entry for point object
+                    # exemplary house connection table - should be retrieved from selected layer
+                    cur = conn.cursor()
+                    #haTableName = self.layerDbInfo.getFullTableName() # "ga.g_hausanschluss"
+                    reTableName = "gas_topo.relation"
+                    topoTableName = "topology.layer"
+                    
+                    cur.execute("""SELECT h.topology_id, h.schema_name, h.table_name, f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + topoTableName + """ h WHERE e.""" + primaryKey + """ = """ + str(aPointId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
+                    
+                    rows = cur.fetchall()
+                    
+                    # should be only one
+                    if len(rows) > 0:
+                        row = rows[0]
+                        aTopoPoint = TopoPoint()
+                        aTopoPoint.setTopologyId(row[0])
+                        aTopoPoint.setSchemaName(row[1])
+                        aTopoPoint.setTableName(row[2])
+                        aTopoPoint.setNodeId(row[3])
+                        nodeData = aTopoPoint
+                    # close connection
+                    #self.db_connection_close()
+                    
+                    return nodeData
         
     def get_edgeData_for_line(self, aLineObject):
         '''
         returns the topology edge data related to the given line object
         '''
-        aLineId = aLineObject.attribute("system_id")
-        if self.layerDbInfo and aLineId:
-            # get db connection
-            conn = self.db_connection(None, None, None, None)
-            if conn:
-                lineData = []
-                
-                cur = conn.cursor()
-                
-                gTableName = self.layerDbInfo.getTable()
-                fullTableName = "ga." + gTableName
-                reTableName = "gas_topo.relation"
-                topoTableName = "topology.layer"
-                
-                cur.execute("""SELECT h.topology_id, h.schema_name, h.table_name, f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + topoTableName + """ h WHERE e.system_id = """ + str(aLineId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
-                
-                rows = cur.fetchall()
-                
-                # could be more than one
-                for row in rows:
-                    aTopoLine = TopoLine()
-                    aTopoLine.setTopologyId(row[0])
-                    aTopoLine.setSchemaName(row[1])
-                    aTopoLine.setTableName(row[2])
-                    aTopoLine.setEdgeId(row[3])
-                    lineData.append(aTopoLine)
-                # close connection
-                #self.db_connection_close()
-                
-                return lineData
+        if self.layerDbInfo: # and aLineId:
+            gTableName = self.layerDbInfo.getTable()
+            fullTableName = "ga." + gTableName
+            primaryKey = self.primaryKey(fullTableName)
+            aLineId = aLineObject.attribute(primaryKey)
+            if aLineId:
+                # get db connection
+                conn = self.db_connection(None, None, None, None)
+                if conn:
+                    lineData = []
+                    
+                    cur = conn.cursor()
+                    
+                    reTableName = "gas_topo.relation"
+                    topoTableName = "topology.layer"
+                    
+                    cur.execute("""SELECT h.topology_id, h.schema_name, h.table_name, f.element_id from """ + fullTableName + """ e, """ + reTableName + """ f, """ + topoTableName + """ h WHERE e.""" + primaryKey + """ = """ + str(aLineId) + """ AND f.topogeo_id = id(e.g) AND f.layer_id = h.layer_id AND h.table_name = '""" + str(gTableName) + """' AND h.layer_id = layer_id(e.g) AND h.topology_id = topology_id(e.g)""")
+                    
+                    rows = cur.fetchall()
+                    
+                    # could be more than one
+                    for row in rows:
+                        aTopoLine = TopoLine()
+                        aTopoLine.setTopologyId(row[0])
+                        aTopoLine.setSchemaName(row[1])
+                        aTopoLine.setTableName(row[2])
+                        aTopoLine.setEdgeId(row[3])
+                        lineData.append(aTopoLine)
+                    # close connection
+                    #self.db_connection_close()
+                    
+                    return lineData
         
     def get_points_for_nodeids(self, nodeIds, topoId):
         '''
@@ -227,8 +252,9 @@ class TopologyConnector():
                     pointIds.append(aTopoPoint)
                 
                 for aPoint in pointIds:
+                    primaryKey = self.primaryKey(aPoint.getFullTableName())
                     cur = conn.cursor()
-                    cur.execute("""SELECT f.system_id from """ + str(aPoint.getFullTableName()) + """ f  WHERE id(f.g) = """ + str(aPoint.getTopologyId()) )
+                    cur.execute("""SELECT f.""" + primaryKey + """ from """ + str(aPoint.getFullTableName()) + """ f  WHERE id(f.g) = """ + str(aPoint.getTopologyId()) )
                     row = cur.fetchone()
                     if row:
                         aPoint.setSystemId(row[0])
@@ -261,7 +287,8 @@ class TopologyConnector():
                     lineIds.append(aTopoLine)
                 #alTableName = "ga.g_anschlussltg_abschnitt"
                 for aLine in lineIds:
-                    cur.execute("""SELECT f.system_id from """ + str(aLine.getFullTableName()) + """ f  WHERE id(f.g) = """ + str(aLine.getTopologyId()) )
+                    primaryKey = self.primaryKey(aLine.getFullTableName())
+                    cur.execute("""SELECT f.""" + primaryKey + """ from """ + str(aLine.getFullTableName()) + """ f  WHERE id(f.g) = """ + str(aLine.getTopologyId()) )
                     row = cur.fetchone()
                     if row:
                         aLine.setSystemId(row[0])
