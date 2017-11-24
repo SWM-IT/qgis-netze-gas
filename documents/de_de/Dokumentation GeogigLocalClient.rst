@@ -116,9 +116,9 @@ Die Funktionen darin sind:
 
 Anmerkung zur Branchhierarchie:
 
-	  In Geogig gibt es eigentlich keine Hierarchie unter den Branches. Alle Branches sind gleichberechtigt und daher kann der Benutzer auch von jedem Branch in jeden Branch mergen. Um die Bedienbarkeit des Plugins jedoch zu vereinfachen, haben wir hier eine Hierarchie eingefügt. Technisch wird das über eine Namenskonvention erreicht: Der Wurzelbranch ist ``master``. Branches mit "einfachen" Namen sind master direkt untergeordnet. Ein Branch darunter hat den Namane seines übergeordneten Branches mit folgender Notation im Namen eingebaut: "<eigener Name>_($<übergeordneter Branch$)". Im Plugin wird nur der <eigene Name> angezeigt.
+	  In Geogig gibt es eigentlich keine Hierarchie unter den Branches. Alle Branches sind gleichberechtigt und daher kann der Benutzer auch von jedem Branch in jeden Branch mergen. Um die Bedienbarkeit des Plugins jedoch zu vereinfachen, haben wir hier eine Hierarchie eingefügt. Technisch wird das über eine Namenskonvention erreicht: Der Wurzelbranch ist ``master``. Branches mit "einfachen" Namen sind master direkt untergeordnet. Ein Branch darunter hat den Namen seines übergeordneten Branches mit folgender Notation im Namen eingebaut: "<eigener Name>_($<übergeordneter Branch$)". Im Plugin wird nur der <eigene Name> angezeigt.
 
-Unter dem Fenster mit dem Branchtree liegt das Fenster mit der Commithistorie. Wird im oberen Fenster ein Branch ausgewählt, so wird in diesem Fenster die Liste der Commits zu diesem Branch angezeigt. Durch einen Rechtsklick auf einen Commit erhalten Sie folgendes Pulldownmenü:
+Unter dem Fenster mit dem Branchtree liegt das Fenster mit der Commithistorie. Wird im oberen Fenster ein Branch ausgewählt, so wird in diesem Fenster die Liste der Commits zu diesem Branch angezeigt. Durch einen Rechtsklick auf einen Commit erhalten Sie folgendes Popupmenü:
 
  .. image:: images/geogig/CommitsPulldown.PNG
 
