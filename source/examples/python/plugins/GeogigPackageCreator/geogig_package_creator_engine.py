@@ -21,11 +21,13 @@
 """
 
 import os
+import sys
 import zipfile
 
 from qgis.core import QgsProject
 
 from geogig.tools.layertracking import (readTrackedLayers, tracked)
+from geogig.tools.utils import (parentReposFolder)
 
 class GeogigPackageCreatorEngine(object):
     
@@ -38,7 +40,7 @@ class GeogigPackageCreatorEngine(object):
         self.archiveFile = None
         
 
-    def Run(self, fileName, withDatabases=True, withProject=True, withConfiguration=True, withPlugins=True):
+    def run(self, fileName, withDatabases=True, withProject=True, withConfiguration=True, withPlugins=True):
         """Do the creation of the package.
         
         :param fileName: Full file name of the package to be created
@@ -57,7 +59,7 @@ class GeogigPackageCreatorEngine(object):
         :type withPlugins: bool        
         """
         
-        self.prepareArchiveFile(fileName)
+        self._prepareArchiveFile(fileName)
         
         if withDatabases:
             self.archiveDatabases()
@@ -65,56 +67,93 @@ class GeogigPackageCreatorEngine(object):
         if withProject:
             self.archiveProject()
             
-        self.closeArchiveFile()
+        if withConfiguration:
+            self.archiveConfig()
+            
+        if withPlugins:
+            self.archivePlugins()
+            
+        self._closeArchiveFile()
         
     
-    def prepareArchiveFile(self, fileName):
+    def _prepareArchiveFile(self, fileName):
         """I create the zip file"""
         self.archiveFile = zipfile.ZipFile(fileName, mode='w', allowZip64 = True)
         
         
-    def closeArchiveFile(self):
+    def _closeArchiveFile(self):
         """I clode the archive"""
         self.archiveFile.close()
         
         
     def archiveDatabases(self):
         """I zip all managed geo package files to the sub folder ARCHIVE_FOLDER_DATABASES of the new package zip"""
-        for file in self.getTrackedPaths():
-            self.archiveFile.write(file, 
-                                   os.path.join(self.ARCHIVE_FOLDER_DATABASES, os.path.relpath(file, self.databaseFolder())), 
-                                   compress_type = zipfile.ZIP_DEFLATED)
-            
-    def  databaseFolder(self):
-        """I return the base path for all managed geo package files"""
-        return os.path.join(os.path.expanduser('~'), 'geogig', 'repos')          
-        
-        
-    def getTrackedPaths(self):
-        """I return a list of all full file names with managed geo package files"""
-        readTrackedLayers()
-        trackedPaths = [layer.geopkg for layer in tracked]
-        return trackedPaths
+        for file in self._getTrackedPaths():
+            self._doArchiveFile(file, os.path.join(self.ARCHIVE_FOLDER_DATABASES, 
+                                                  os.path.dirname(os.path.relpath(file, self._databaseFolder())))) 
+                                
 
     def archiveProject(self):
         projectPath = QgsProject.instance().fileName()
         
         if projectPath:
-            self.archiveFile.write(projectPath,
-                                   os.path.join(self.ARCHIVE_FOLDER_PROJECT, os.path.basename(projectPath)),
-                                   compress_type = zipfile.ZIP_DEFLATED)
+            self._doArchiveFile(projectPath, self.ARCHIVE_FOLDER_PROJECT)
         else:
             # No project file. Should be logged.
             pass
-                                   
+                     
+    
+    def archiveConfig(self):
+        """ Archive all configuration files"""
+        configFolder = self._geogigConfigFolder()
+        
+        for configFile in ['repositories', 'trackedlayers', 'trackedBranches']:
+            self._doArchiveFile(os.path.join(configFolder, configFile), self.ARCHIVE_FOLDER_CONFIG)
+            
+    def archivePlugins(self):
+        for pluginName in ['qgiscommons2', 'geogig', 'GeogigLocalClient']:
+            pluginFolder = os.path.dirname(sys.modules[pluginName].__file__)
+            self._archiveFolder(pluginFolder, self.ARCHIVE_FOLDER_PLUGINS)
+            
+            
+    def  _databaseFolder(self):
+        """I return the base path for all managed geo package files"""
+        return parentReposFolder()          
         
         
-    def archiveFolder(self, sourceFolder, archiveFolder):
+    def _getTrackedPaths(self):
+        """I return a list of all full file names with managed geo package files"""
+        readTrackedLayers()
+        #trackedPaths = [layer.geopkg for layer in tracked]
+        #return trackedPaths
+        return [layer.geopkg for layer in tracked]
+
+        
+    def _geogigConfigFolder(self):
+        """ Folder with geogig configuration files"""
+        return os.path.join(os.path.expanduser('~'), 'geogig')
+        
+    def _archiveFolder(self, sourceFolder, archiveFolder):
         for folder, subfolders, files in os.walk(sourceFolder):
             for file in files:
                 self.archiveFile.write(os.path.join(folder, file), 
-                                       os.path.join(archiveFolder, os.path.relpath(os.path.join(folder, file), sourceFolder)), 
+                                       os.path.join(archiveFolder, os.path.relpath(os.path.join(folder, file), os.path.dirname(sourceFolder))), 
                                        compress_type = zipfile.ZIP_DEFLATED)
+                
+        
+    def _doArchiveFile(self, sourceFile, targetFolder):
+        """Archive the given file to the given folder in the archive
+        
+        If the file does not exists, it is skipped"""
+        
+        if not os.path.exists(sourceFile):
+            # FIXME: Some logging?!
+            return 
+        
+        self.archiveFile.write(sourceFile,
+                               os.path.join(targetFolder, os.path.basename(sourceFile)),
+                               compress_type = zipfile.ZIP_DEFLATED)
+        
  
     
     

@@ -63,8 +63,10 @@ class GeogigPackageCreatorDialog(QtGui.QDialog, FORM_CLASS):
 
     def createPackage(self):
             Engine = GeogigPackageCreatorEngine()
-            Engine.Run(self.lineEditFileName.text(), 
+            Engine.run(self.lineEditFileName.text(), 
                        withDatabases    = self.cbDatabase.isChecked(),
                        withProject      = self.cbQgisProject.isChecked(), 
                        withConfiguration= self.cbGeogigConfig.isChecked(), 
                        withPlugins      = self.cbGeogigPlugins.isChecked())
+            
+            
