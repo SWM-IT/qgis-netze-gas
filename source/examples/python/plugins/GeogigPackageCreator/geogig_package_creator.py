@@ -84,7 +84,7 @@ class GeogigPackageCreator:
 
     def add_action(
         self,
-        icon_path,
+        icon_name,
         text,
         callback,
         enabled_flag=True,
@@ -95,9 +95,8 @@ class GeogigPackageCreator:
         parent=None):
         """Add a toolbar icon to the toolbar.
 
-        :param icon_path: Path to the icon for this action. Can be a resource
-            path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
-        :type icon_path: str
+        :param icon_name: Name of the icon for this action. Its a normal file ui/resources.
+        :type icon_name: str
 
         :param text: Text that should be shown in menu items for this action.
         :type text: str
@@ -135,7 +134,9 @@ class GeogigPackageCreator:
         # Create the dialog (after translation) and keep reference
         self.dlg = GeogigPackageCreatorDialog()
 
-        icon = QIcon(icon_path)
+
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "ui", "resources", os.path.basename(icon_name)))
+
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
@@ -160,10 +161,9 @@ class GeogigPackageCreator:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
-        icon_path = ':/plugins/GeogigPackageCreator/icon.png'
+        
         self.add_action(
-            icon_path,
+            'package_creator_24.png',
             text=self.tr(u'Create geogig package'),
             callback=self.run,
             parent=self.iface.mainWindow())
