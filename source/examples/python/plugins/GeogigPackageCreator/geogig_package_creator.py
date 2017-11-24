@@ -61,7 +61,7 @@ class GeogigPackageCreator:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Geogig Package Creator')
+        self.menu = self.tr(u'&Geogig Package')
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'GeogigPackageCreator')
         self.toolbar.setObjectName(u'GeogigPackageCreator')
@@ -164,7 +164,7 @@ class GeogigPackageCreator:
         
         self.add_action(
             'package_creator_24.png',
-            text=self.tr(u'Create geogig package'),
+            text=self.tr(u'Create Package'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
@@ -173,7 +173,7 @@ class GeogigPackageCreator:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginDatabaseMenu(
-                self.tr(u'&Geogig Package Creator'),
+                self.tr(u'&Geogig Package'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
