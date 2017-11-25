@@ -67,7 +67,7 @@ class GeogigPackageCreatorEngine(QObject):
         self._prepareArchiveFile(fileName)
         
         
-        #self.progressChanged.emit(0, "Storing databases")
+        self.progressChanged.emit(0, "Storing databases")
 
         if withDatabases:
             self.archiveDatabases()

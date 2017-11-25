@@ -25,6 +25,7 @@ import sys
 import zipfile
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
+from __builtin__ import True
 
 class GeogigPackageReaderEngine(QObject):
     
@@ -37,7 +38,9 @@ class GeogigPackageReaderEngine(QObject):
     
     def __init__(self):
         QObject.__init__(self)
-        self.archiveFile = None
+        self.archiveFile  = None
+        self.fileSizeSum  = 0
+        self.fileSizeDone = 0
         
     def run(self, fileName):
         """Do the creation of the package.
@@ -46,7 +49,13 @@ class GeogigPackageReaderEngine(QObject):
         :type fileName: str
         """
         
-        self._prepareArchiveFile(fileName)
+        self.progressChanged.emit(0, "Reading package")
+        
+        if not self._prepareArchiveFile(fileName):
+            return
+        
+        self._getFileSizeSum()
+        self.fileSizeDone = 0
         
         self.readDatabases()
         self.readProject()
@@ -57,14 +66,36 @@ class GeogigPackageReaderEngine(QObject):
         
         self.progressChanged.emit(100, "Done")
         
-    def _prepareArchiveFile(sekf, fileName):
-        pass
+    def _prepareArchiveFile(self, fileName):
+        """I open the zip file"""
+        
+        if zipfile.is_zipfile(fileName):
+            self.archiveFile = zipfile.ZipFile(fileName, mode='r', allowZip64 = True)
+            return True
+        else:
+            return false
+        
+    def _getFileSizeSum(self):
+        """I sum up the files sizes of all files in the archive file and store it in fileSizeSum"""
+        self.fileSizeSum = 0
+        
+        for info in self.archiveFile.infolist():
+            self.fileSizeSum += info.file_size
+
     
     def _closeArchiveFile(self):
-        pass
+        """I clode the archive"""
+        self.archiveFile.close()
         
     def readDatabases(self):
-        pass
+        """I unzip the files from Databases and store them in the gegig databases folder"""
+        targetFolder = self._databaseFolder()
+        
+        for fileInfo in self.archiveFile.infolist():
+            if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_DATABASES):
+                self.archiveFile.extract(fileInfo, targetFolder)
+                self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+
     
     def readProject(self):
         pass
@@ -75,6 +106,19 @@ class GeogigPackageReaderEngine(QObject):
     def readPlugins(self):
         pass
 
+    def _addFileSizeDone(self, value, progressString):
+        self.fileSizeDone += value
+        progress = round(self.fileSizeDone/float(self.fileSizeSum) * 100)
+        self.progressChanged.emit(progress, progressString)
+        
+    
+    def _databaseFolder(self):
+        # Actually I would like to use geogig.tools.utils.parentReposFolder
+        # But it may be, that the plugin geogig is not yet installed.
+        # Thus I use the default folder for geogig geo packages files.
+        return os.path.join(os.path.expanduser('~'), 'geogig', 'repos')
+        
+        
         
         
         

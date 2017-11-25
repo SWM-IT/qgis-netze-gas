@@ -74,7 +74,7 @@ class GeogigPackageCreatorDialog(QtGui.QDialog, FORM_CLASS):
         
         # If a negative value is given, I leave the progress as it is.
         # Nice feature, if I only want to change the label text.
-        if progressValue > 0:
+        if not (progressValue < 0):
             self.progressBar.setValue(progressValue) 
 
         self.progressLabel.setText(progressString)
