@@ -179,6 +179,9 @@ class GeogigPackageCreator:
         # remove the toolbar
         del self.toolbar
 
+        # Close the dialog.
+        self.dlg.close()
+        del self.dlg
 
     def run(self):
         """Run method that performs all the real work"""
