@@ -48,13 +48,12 @@ class GeogigPackageCreatorDialog(QtGui.QDialog, FORM_CLASS):
         
     def selectFile(self):
         SelectedFile = self.lineEditFileName.text()
+        StartDir     = '';
         
         if SelectedFile <> '':
             SelectedDirectory = os.path.dirname(SelectedFile)
             if os.path.exists(SelectedDirectory) and os.path.isdir(SelectedDirectory):
                 StartDir = SelectedDirectory
-            else:
-                StartDir = '';
                 
         self.lineEditFileName.setText(QFileDialog.getSaveFileName(self, 
                                                                   caption   = 'Select file for package',
