@@ -946,11 +946,18 @@ class CommitTreeItemWidget(QLabel):
                                              % t for t in self.tags]) + "&nbsp;"
         else:
             tags = ""
+        
+        if self.commit.message == "":
+            commitText = "???"
+        else:
+            commitText = self.commit.message.splitlines()[0] 
+        
         size = self.font().pointSize()
+        
         text = ('%s<b><font style="font-size:%spt">%s</font></b>'
             '<br><font color="#5f6b77" style="font-size:%spt"><b>%s</b> by <b>%s</b></font> '
             '<font color="#5f6b77" style="font-size:%spt; background-color:rgb(225,225,225)"> %s </font>' %
-            (tags, str(size), self.commit.message.splitlines()[0], str(size - 1),
+            (tags, str(size), commitText, str(size - 1),
              self.commit.authorprettydate(), self.commit.authorname, str(size - 1), self.commit.id[:10]))
         self.setText(text)
 
