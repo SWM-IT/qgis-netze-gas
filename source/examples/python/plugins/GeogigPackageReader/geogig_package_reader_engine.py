@@ -24,6 +24,8 @@ import os
 import sys
 import shutil
 import zipfile
+import qgis.utils
+from qgis.core import QgsApplication
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 from __builtin__ import True
@@ -90,48 +92,46 @@ class GeogigPackageReaderEngine(QObject):
         
     def readDatabases(self):
         """I unzip the files from Databases and store them in the gegig databases folder"""
-        #targetFolder = self._databaseFolder()
+        targetFolder = self._geogigConfigFolder()
+        # FIXME
         targetFolder = "c:\\temp\\target\\databases"
         
         self._unzipFolder(self.ARCHIVE_FOLDER_DATABASES, targetFolder)
-        
-        #for fileInfo in self.archiveFile.infolist():
-        #    if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_DATABASES):
-        #        self.archiveFile.extract(fileInfo, targetFolder)
-        #        self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
 
     
     def readProject(self):
+        targetFolder = self._defaultProjectFolder()
+        # FIXME
         targetFolder = "c:\\temp\\target\\project"
 
         self._unzipFolder(self.ARCHIVE_FOLDER_PROJECT, targetFolder)
         
         
     def readConfig(self):
+        targetFolder = self._geogigConfigFolder()
         # FIXME
         targetFolder = "c:\\temp\\target\\config"
         
         self._unzipFolder(self.ARCHIVE_FOLDER_CONFIG, targetFolder)
-        
-        #for fileInfo in self.archiveFile.infolist():
-        #   if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_CONFIG):
-        #        self.archiveFile.extract(fileInfo, targetFolder)
-        #        self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
-                        
+                                
     
     def readPlugins(self):
+        targetFolder = self._pluginsFolder()
         # FIXME
         targetFolder = "c:\\temp\\target\\plugins"
         
         self._unzipFolder(self.ARCHIVE_FOLDER_PLUGINS, targetFolder)
         
-        #for fileInfo in self.archiveFile.infolist():
-        #    if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_PLUGINS):
-        #        self.archiveFile.extract(fileInfo, targetFolder)
-         #       self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+        # Activate plugins
+        for pluginName in ['qgiscommons2', 'geogig', 'GeogigLocalClient']:
+            qgis.utils.loadPlugin(pluginName)
+            
+        for pluginName in ['geogig', 'GeogigLocalClient']:
+            qgis.utils.startPlugin(pluginName)
+
                 
     def _unzipFolder(self, sourcePath, targetFolder):
-        """I unzip all files below sourcePath from the zip file and store them below targetFoleder"""
+        """I unzip all files below sourcePath from the zip file and store them below targetFolder"""
         for fileInfo in self.archiveFile.infolist():
             if fileInfo.filename.startswith(sourcePath):
                 # I cannot simply use self.archiveFile.extract(fileInfo, targetFolder) because 
@@ -162,6 +162,16 @@ class GeogigPackageReaderEngine(QObject):
         # Thus I use the default folder for geogig geo packages files.
         return os.path.join(os.path.expanduser('~'), 'geogig', 'repos')
         
+    def _pluginsFolder(self):
+        """Folder where the plugins shall be stored"""
+        return os.path.join(QgsApplication.qgisSettingsDirPath(), 'python', 'plugins')
+    
+    def _geogigConfigFolder(self):
+        """ Folder with geogig configuration files"""
+        return os.path.join(os.path.expanduser('~'), 'geogig')
+    
+    def _defaultProjectFolder(self):
+        return os.path.join(os.path.expanduser('~'), 'qgis')
         
         
         
