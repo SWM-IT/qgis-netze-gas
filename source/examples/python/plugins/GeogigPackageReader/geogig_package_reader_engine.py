@@ -22,6 +22,7 @@
 
 import os
 import sys
+import shutil
 import zipfile
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
@@ -89,22 +90,65 @@ class GeogigPackageReaderEngine(QObject):
         
     def readDatabases(self):
         """I unzip the files from Databases and store them in the gegig databases folder"""
-        targetFolder = self._databaseFolder()
+        #targetFolder = self._databaseFolder()
+        targetFolder = "c:\\temp\\target\\databases"
         
-        for fileInfo in self.archiveFile.infolist():
-            if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_DATABASES):
-                self.archiveFile.extract(fileInfo, targetFolder)
-                self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+        self._unzipFolder(self.ARCHIVE_FOLDER_DATABASES, targetFolder)
+        
+        #for fileInfo in self.archiveFile.infolist():
+        #    if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_DATABASES):
+        #        self.archiveFile.extract(fileInfo, targetFolder)
+        #        self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
 
     
     def readProject(self):
-        pass
+        targetFolder = "c:\\temp\\target\\project"
+
+        self._unzipFolder(self.ARCHIVE_FOLDER_PROJECT, targetFolder)
+        
         
     def readConfig(self):
-        pass
+        # FIXME
+        targetFolder = "c:\\temp\\target\\config"
+        
+        self._unzipFolder(self.ARCHIVE_FOLDER_CONFIG, targetFolder)
+        
+        #for fileInfo in self.archiveFile.infolist():
+        #   if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_CONFIG):
+        #        self.archiveFile.extract(fileInfo, targetFolder)
+        #        self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+                        
     
     def readPlugins(self):
-        pass
+        # FIXME
+        targetFolder = "c:\\temp\\target\\plugins"
+        
+        self._unzipFolder(self.ARCHIVE_FOLDER_PLUGINS, targetFolder)
+        
+        #for fileInfo in self.archiveFile.infolist():
+        #    if fileInfo.filename.startswith(self.ARCHIVE_FOLDER_PLUGINS):
+        #        self.archiveFile.extract(fileInfo, targetFolder)
+         #       self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+                
+    def _unzipFolder(self, sourcePath, targetFolder):
+        """I unzip all files below sourcePath from the zip file and store them below targetFoleder"""
+        for fileInfo in self.archiveFile.infolist():
+            if fileInfo.filename.startswith(sourcePath):
+                # I cannot simply use self.archiveFile.extract(fileInfo, targetFolder) because 
+                # that would produce folder with names like self.ARCHIVE_FOLDER_PLUGINS
+                # To get rid of the beginning folders in the zip, I need to figure out the 
+                # target path myself etc. 
+                filename   = os.path.relpath(fileInfo.filename, sourcePath)
+                targetfile = os.path.join(targetFolder, filename)
+                if not os.path.exists(os.path.dirname(targetfile)):
+                    os.makedirs(os.path.dirname(targetfile))
+                source = self.archiveFile.open(fileInfo)
+                target = file(targetfile, "wb")
+                with source, target:
+                    shutil.copyfileobj(source, target)
+                    
+                self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+        
 
     def _addFileSizeDone(self, value, progressString):
         self.fileSizeDone += value
