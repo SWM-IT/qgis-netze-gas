@@ -111,7 +111,7 @@ class GeogigPackageCreatorEngine(QObject):
                                                   os.path.dirname(os.path.relpath(file, self._databaseFolder()))))
             nbDone += 1 
             progress = round(nbDone/float(nbDatabase) * 100)
-            self.progressChanged.emit(progress, "File: " + os.path.basename(file))
+            self.progressChanged.emit(progress, "Compressing file: " + os.path.basename(file))
                                 
 
     def archiveProject(self):
@@ -144,6 +144,7 @@ class GeogigPackageCreatorEngine(QObject):
         
     def _getTrackedPaths(self):
         """I return a list of all full file names with managed geo package files"""
+        global tracked
         readTrackedLayers()
         #trackedPaths = [layer.geopkg for layer in tracked]
         #return trackedPaths
