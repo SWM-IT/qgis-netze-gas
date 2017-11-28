@@ -25,10 +25,10 @@ import sys
 import shutil
 import zipfile
 
-from PyQt4.QtCore import QSettings, QVariant
+from PyQt4.QtCore import QSettings, QVariant, QFileInfo
 
 import qgis.utils
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication, QgsProject
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 from __builtin__ import True
@@ -64,9 +64,9 @@ class GeogigPackageReaderEngine(QObject):
         self.fileSizeDone = 0
         
         self.readDatabases()
-        self.readProject()
         self.readConfig()
         self.readPlugins()
+        self.readProject()
             
         self._closeArchiveFile()
         
@@ -101,7 +101,14 @@ class GeogigPackageReaderEngine(QObject):
     
     def readProject(self):
         targetFolder = self._defaultProjectFolder()
-        self._unzipFolder(self.ARCHIVE_FOLDER_PROJECT, targetFolder)
+        anyProject   = self._unzipFolder(self.ARCHIVE_FOLDER_PROJECT, targetFolder)
+        
+        if anyProject:
+            self.progressChanged.emit(-1, 'Opening project file')
+            
+            projectFile = os.listdir(targetFolder)[0]
+            project     = QgsProject.instance() 
+            project.read(QFileInfo(os.path.join(targetFolder, projectFile)))        
         
         
     def readConfig(self):
@@ -113,6 +120,7 @@ class GeogigPackageReaderEngine(QObject):
         targetFolder = self._pluginsFolder()        
         anyPlugin    = self._unzipFolder(self.ARCHIVE_FOLDER_PLUGINS, targetFolder)
         
+        self.progressChanged.emit(-1, 'Setting up plugins')
         
         if anyPlugin:
             # Activate plugins
