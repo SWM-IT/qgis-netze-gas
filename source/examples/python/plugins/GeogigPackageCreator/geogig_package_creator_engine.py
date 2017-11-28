@@ -118,7 +118,7 @@ class GeogigPackageCreatorEngine(QObject):
         projectPath = QgsProject.instance().fileName()
         
         if projectPath:
-            self._doArchiveFile(projectPath, self.ARCHIVE_FOLDER_PROJECT)
+            self._doArchiveProjectFile(projectPath, self.ARCHIVE_FOLDER_PROJECT)
         else:
             # No project file. Should be logged.
             pass
@@ -200,11 +200,44 @@ class GeogigPackageCreatorEngine(QObject):
         if not os.path.exists(sourceFile):
             # FIXME: Some logging?!
             return 
-        
+                
         self.archiveFile.write(sourceFile,
                                os.path.join(targetFolder, os.path.basename(sourceFile)),
                                compress_type = zipfile.ZIP_DEFLATED)
         
  
-    
+    def _doArchiveProjectFile(self, sourceFile, targetFolder):
+        """Archive the given file to the given folder in the archive
+        
+        If the file does not exists, it is skipped"""
+        
+        if not os.path.exists(sourceFile):
+            # FIXME: Some logging?!
+            return 
+        
+        
+        # Prepare QGis project file: Here I have typically user specific paths.
+        # To avoid changing that on target machine, I change them to absolute,
+        # static paths.
+        currentPath = self._databaseFolder().lower()
+        targetPath  = self._targetDatabaseFolder()
+        
+
+        with open(sourceFile) as f:
+            lines = f.readlines()
+        f.close()
+                
+        new_lines = []
+        for line in lines:
+            if currentPath in line.lower():
+                new_lines.append(line.lower().replace(currentPath, targetPath))
+            else:
+                new_lines.append(line)
+                            
+        self.archiveFile.writestr(os.path.join(targetFolder, os.path.basename(sourceFile)),
+                                  "\n".join(new_lines),
+                                  compress_type = zipfile.ZIP_DEFLATED)
+        
+
+            
     
