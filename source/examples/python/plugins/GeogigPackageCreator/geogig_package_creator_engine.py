@@ -128,7 +128,29 @@ class GeogigPackageCreatorEngine(QObject):
         """ Archive all configuration files"""
         configFolder = self._geogigConfigFolder()
         
-        for configFile in ['repositories', 'trackedlayers', 'trackedBranches']:
+        # Prepare trackedlayers file: Here I have typically user specific paths.
+        # To avoid changing that on target machine, I change them to absolute,
+        # static paths.
+        currentPath = self._databaseFolder().replace("\\", "\\\\").lower()
+        targetPath  = self._targetDatabaseFolder().replace("\\", "\\\\")
+        
+        filename = os.path.join(configFolder, "trackedlayers")
+        if os.path.exists(filename):
+            with open(filename) as f:
+                lines = f.readlines()
+                
+            new_lines = []
+            for line in lines:
+                new_lines.append(line.lower().replace(currentPath, targetPath))
+                
+            trackedString = "\n".join(new_lines)
+            
+            self.archiveFile.writestr(os.path.join(self.ARCHIVE_FOLDER_CONFIG, 'trackedlayers'),
+                                      trackedString,
+                                      compress_type = zipfile.ZIP_DEFLATED)
+                        
+        # The other config files I can add to the zip unchanged.
+        for configFile in ['repositories', 'trackedBranches']:
             self._doArchiveFile(os.path.join(configFolder, configFile), self.ARCHIVE_FOLDER_CONFIG)
             
     def archivePlugins(self):
@@ -139,7 +161,14 @@ class GeogigPackageCreatorEngine(QObject):
             
     def  _databaseFolder(self):
         """I return the base path for all managed geo package files"""
-        return parentReposFolder()          
+        return parentReposFolder() 
+    
+    def _targetDatabaseFolder(self):
+        """Folder where I want to store the databases on the target machine
+        
+        Note, that I try to avoid a user specific folder. That way I can prepare 
+        the trackedlayers file and need not customize it on target side"""
+        return os.path.join(os.getenv('PROGRAMDATA'), 'geogig', 'repos')         
         
         
     def _getTrackedPaths(self):
