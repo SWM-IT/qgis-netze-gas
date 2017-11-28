@@ -92,34 +92,22 @@ class GeogigPackageReaderEngine(QObject):
         
     def readDatabases(self):
         """I unzip the files from Databases and store them in the gegig databases folder"""
-        targetFolder = self._geogigConfigFolder()
-        # FIXME
-        targetFolder = "c:\\temp\\target\\databases"
-        
+        targetFolder = self._databaseFolder()       
         self._unzipFolder(self.ARCHIVE_FOLDER_DATABASES, targetFolder)
 
     
     def readProject(self):
         targetFolder = self._defaultProjectFolder()
-        # FIXME
-        targetFolder = "c:\\temp\\target\\project"
-
         self._unzipFolder(self.ARCHIVE_FOLDER_PROJECT, targetFolder)
         
         
     def readConfig(self):
-        targetFolder = self._geogigConfigFolder()
-        # FIXME
-        targetFolder = "c:\\temp\\target\\config"
-        
+        targetFolder = self._geogigConfigFolder()        
         self._unzipFolder(self.ARCHIVE_FOLDER_CONFIG, targetFolder)
                                 
     
     def readPlugins(self):
-        targetFolder = self._pluginsFolder()
-        # FIXME
-        targetFolder = "c:\\temp\\target\\plugins"
-        
+        targetFolder = self._pluginsFolder()        
         self._unzipFolder(self.ARCHIVE_FOLDER_PLUGINS, targetFolder)
         
         # Activate plugins
@@ -151,19 +139,27 @@ class GeogigPackageReaderEngine(QObject):
         
 
     def _addFileSizeDone(self, value, progressString):
+        """I add value to self.fileSizeDone and emit a progressChanged signal accordingly"""
         self.fileSizeDone += value
         progress = round(self.fileSizeDone/float(self.fileSizeSum) * 100)
         self.progressChanged.emit(progress, progressString)
         
     
     def _databaseFolder(self):
-        # Actually I would like to use geogig.tools.utils.parentReposFolder
-        # But it may be, that the plugin geogig is not yet installed.
-        # Thus I use the default folder for geogig geo packages files.
-        return os.path.join(os.path.expanduser('~'), 'geogig', 'repos')
+        """Folder for the databases on the target machine
+        
+        Note, that this folder can difer from geogig.tools.utils.parentReposFolder
+        because that is a configuration that points per default to the users home 
+        directory. But we want to avoid user specific directories. That would imply, 
+        we need to modify also the configuration (mainly trackedlayers file) pointing 
+        to the databases.""" 
+        return os.path.join(os.getenv('PROGRAMDATA'), 'geogig', 'repos')
         
     def _pluginsFolder(self):
         """Folder where the plugins shall be stored"""
+        # FIXME: Is use qgisSettingsDirPath because I can influence it by --configpath
+        # parameter on QGis start and it seems QGis searches actually there for plugins.
+        # But is this really the right way? There should be something more explicit!?
         return os.path.join(QgsApplication.qgisSettingsDirPath(), 'python', 'plugins')
     
     def _geogigConfigFolder(self):
@@ -171,7 +167,8 @@ class GeogigPackageReaderEngine(QObject):
         return os.path.join(os.path.expanduser('~'), 'geogig')
     
     def _defaultProjectFolder(self):
-        return os.path.join(os.path.expanduser('~'), 'qgis')
+        """Folder to store the QGis project file in."""
+        return os.path.join(os.getenv('PROGRAMDATA'), 'geogig', 'qgis')
         
         
         
