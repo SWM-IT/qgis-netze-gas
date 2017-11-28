@@ -173,10 +173,8 @@ class GeogigPackageCreatorEngine(QObject):
         
     def _getTrackedPaths(self):
         """I return a list of all full file names with managed geo package files"""
-        global tracked
         readTrackedLayers()
-        #trackedPaths = [layer.geopkg for layer in tracked]
-        #return trackedPaths
+
         return [layer.geopkg for layer in tracked]
 
         
