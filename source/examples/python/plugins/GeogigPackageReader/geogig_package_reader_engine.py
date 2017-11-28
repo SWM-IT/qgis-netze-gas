@@ -24,6 +24,9 @@ import os
 import sys
 import shutil
 import zipfile
+
+from PyQt4.QtCore import QSettings, QVariant
+
 import qgis.utils
 from qgis.core import QgsApplication
 
@@ -108,18 +111,32 @@ class GeogigPackageReaderEngine(QObject):
     
     def readPlugins(self):
         targetFolder = self._pluginsFolder()        
-        self._unzipFolder(self.ARCHIVE_FOLDER_PLUGINS, targetFolder)
+        anyPlugin    = self._unzipFolder(self.ARCHIVE_FOLDER_PLUGINS, targetFolder)
         
-        # Activate plugins
-        for pluginName in ['qgiscommons2', 'geogig', 'GeogigLocalClient']:
-            qgis.utils.loadPlugin(pluginName)
-            
-        for pluginName in ['geogig', 'GeogigLocalClient']:
-            qgis.utils.startPlugin(pluginName)
+        
+        if anyPlugin:
+            # Activate plugins
+            for pluginName in ['qgiscommons2', 'geogig', 'GeogigLocalClient']:
+                qgis.utils.loadPlugin(pluginName)
 
+            for pluginName in ['geogig', 'GeogigLocalClient']:
+                qgis.utils.startPlugin(pluginName)
+
+            settings=QSettings()
+            for pluginName in ['geogig', 'GeogigLocalClient']:
+                settings.setValue('PythonPlugins/' + pluginName, True)
+                
+            # I import here, because it may be, the plugin has just been unzipped.
+            from geogig.gui.dialogs.navigatordialog import navigatorInstance
+            navigatorInstance.setVisible(False)
+                
                 
     def _unzipFolder(self, sourcePath, targetFolder):
-        """I unzip all files below sourcePath from the zip file and store them below targetFolder"""
+        """I unzip all files below sourcePath from the zip file and store them below targetFolder.
+        
+        I return True, if there was anything to unzip"""
+        anythingUnzipped = False
+        
         for fileInfo in self.archiveFile.infolist():
             if fileInfo.filename.startswith(sourcePath):
                 # I cannot simply use self.archiveFile.extract(fileInfo, targetFolder) because 
@@ -134,8 +151,11 @@ class GeogigPackageReaderEngine(QObject):
                 target = file(targetfile, "wb")
                 with source, target:
                     shutil.copyfileobj(source, target)
-                    
+                
+                anythingUnzipped = True
                 self._addFileSizeDone(fileInfo.file_size, fileInfo.filename)
+                
+        return anythingUnzipped
         
 
     def _addFileSizeDone(self, value, progressString):
