@@ -11,7 +11,7 @@ Einleitung
 ----------
 
 Der *Geogig Package Creator* dient zur Erstellung von gepackten Dateien (zip) mit allem Notwendigen zur Bearbeitung von Daten mittes QGis unter Zuhilfenahme von Geogig und des *Vereinfachtes Geogig Plugin*. Hiermit kann ein Administrator Daten und Konfiguration für seine Benutzer auf bequeme Weise bereitstellen.
-Die erstellen Packe kannn ein Benutzer per *Geogig Package Reader* auf seinem System auspacken und hat ein fertig konfiguriertes System zur Hand.
+Die erstellten Packete kannn ein Benutzer per *Geogig Package Reader* auf seinem System auspacken und hat ein fertig konfiguriertes System zur Hand.
 
 Ein Packet enthält folgende Komponenten:
 
