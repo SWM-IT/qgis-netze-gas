@@ -26,10 +26,17 @@ import os
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QFileDialog
 
+from qgis.PyQt.QtGui import QIcon
+
 from geogig_package_reader_engine import GeogigPackageReaderEngine
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geogig_package_reader_dialog_base.ui'))
+
+pluginPath = os.path.dirname(__file__)
+
+def icon(fileName):
+    return QIcon(os.path.join(pluginPath, "ui", "resources", fileName))
 
 
 class GeogigPackageReaderDialog(QtGui.QDialog, FORM_CLASS):
@@ -44,6 +51,8 @@ class GeogigPackageReaderDialog(QtGui.QDialog, FORM_CLASS):
         self.setupUi(self)
         
         self.pbSelectFile.clicked.connect(self.selectFile)
+        self.pbSelectFile.setIcon(icon("folder_16.png"))
+        
         self.pbOK.clicked.connect(self.readPackage)
         self.pbCancel.clicked.connect(self.close)
         

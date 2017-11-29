@@ -26,10 +26,17 @@ import os
 from PyQt4 import QtGui, uic
 from PyQt4.QtGui import QFileDialog, QDialogButtonBox
 
+from qgis.PyQt.QtGui import QIcon
+
 from geogig_package_creator_engine import GeogigPackageCreatorEngine
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geogig_package_creator_dialog_base.ui'))
+
+pluginPath = os.path.dirname(__file__)
+
+def icon(fileName):
+    return QIcon(os.path.join(pluginPath, "ui", "resources", fileName))
 
 
 class GeogigPackageCreatorDialog(QtGui.QDialog, FORM_CLASS):
@@ -43,6 +50,8 @@ class GeogigPackageCreatorDialog(QtGui.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
         self.pbSelectFile.clicked.connect(self.selectFile)
+        self.pbSelectFile.setIcon(icon("folder_16.png"))
+        
         self.pbOK.clicked.connect(self.createPackage)
         self.pbCancel.clicked.connect(self.close)
         
