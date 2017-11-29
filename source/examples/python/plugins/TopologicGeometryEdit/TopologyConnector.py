@@ -21,14 +21,14 @@ class TopologyConnector():
         '''
         self.connection = None
         
-    def db_connection(self, host, dbname, user, password):
+    def db_connection(self, host="localhost", dbname="nisconnect_integration", user="postgres", password="postgres"):
         '''
         returns a database connection with given parameter
         '''
         toolname = "TopologyConnector"
         
         if not self.connection:
-        
+            '''
             if not host:
                 host = "localhost"
             if not dbname:
@@ -37,7 +37,7 @@ class TopologyConnector():
                 user = "postgres"
             if not password:
                 password = "postgres"
-            
+            '''
             try:
                 conn = psycopg2.connect("dbname='" + dbname + "' user='" + user + "' host='" + host + "' password='" + password + "'")
                 self.connection = conn
@@ -69,7 +69,7 @@ class TopologyConnector():
         pKey = "system_id"
         #'''
         if fullTableName:
-            conn = self.db_connection(None, None, None, None)
+            conn = self.db_connection() #None, None, None, None)
             if conn:
                 cur = conn.cursor()
                 
@@ -89,7 +89,7 @@ class TopologyConnector():
         '''
         if nodeId:
             # get db connection
-            conn = self.db_connection(None, None, None, None)
+            conn = self.db_connection() #None, None, None, None)
             if conn:
                 # get edge entries from relations table
                 cur = conn.cursor()
@@ -124,7 +124,7 @@ class TopologyConnector():
                 
         if len(edgeIds) > 0:
             # get db connection
-            conn = self.db_connection(None, None, None, None)
+            conn = self.db_connection() #None, None, None, None)
             if conn:
                 # get node entries from edge table
                 cur = conn.cursor()
@@ -163,7 +163,7 @@ class TopologyConnector():
             aPointId = aPointObject.attribute(primaryKey)
             if aPointId:
                 # get db connection
-                conn = self.db_connection(None, None, None, None)
+                conn = self.db_connection() #None, None, None, None)
                 if conn:
                     nodeData = None
                     # get db entry for point object
@@ -202,7 +202,7 @@ class TopologyConnector():
             aLineId = aLineObject.attribute(primaryKey)
             if aLineId:
                 # get db connection
-                conn = self.db_connection(None, None, None, None)
+                conn = self.db_connection() #None, None, None, None)
                 if conn:
                     lineData = []
                     
@@ -233,7 +233,7 @@ class TopologyConnector():
         returns the point objects related to the given node ids
         '''
         if nodeIds:
-            conn = self.db_connection(None, None, None, None)
+            conn = self.db_connection() #None, None, None, None)
             if conn:
                 pointIds = []
                 pointData = []
@@ -267,7 +267,7 @@ class TopologyConnector():
         returns the line objects related to the given edge ids
         '''
         if edgeIds:
-            conn = self.db_connection(None, None, None, None)
+            conn = self.db_connection() #None, None, None, None)
             if conn:
                 lineIds = []
                 lineData = []
@@ -311,7 +311,7 @@ class TopologyConnector():
         returns the geometry of a topo node with the given nodeId
         '''
         if nodeId:
-            conn = self.db_connection(None, None, None, None)
+            conn = self.db_connection() #None, None, None, None)
             if conn:
                 nodeGeom = None
                 cur = conn.cursor()
