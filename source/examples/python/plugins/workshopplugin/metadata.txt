@@ -1,0 +1,10 @@
+[general]
+
+name=Gas Simulation
+
+qgisMinimumVersion=1.5
+
+qgisMaximumVersion=2.99
+
+description=Simulation
+version=0.1
