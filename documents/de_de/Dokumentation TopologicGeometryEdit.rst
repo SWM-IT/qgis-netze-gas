@@ -16,10 +16,17 @@ Um Topologie in QGIS nutzbar zu machen, müssen folgende **Datenbankerweiterungen
 Diese können im Kontextmenu der Datenbank hinzugefügt werden:
  .. image:: images/topology_extensions.png
 
-Per `SQL-Skript <../../source/SQL/Script_create_topology_entries.sql>`_ können dann die Topologie-Tabellen über eine bereitgestellte Funktion in einem neuen Schema erzeugt und gefüllt werden.
+Per `SQL-Skript <../../source/SQL/Script_create_topology_entries.sql>`_ können dann die Topologie-Tabellen über eine bereitgestellte Funktion in einem neuen Schema erzeugt und gefüllt werden. Außerdem wird eine Sequenz auf der Spalte 'system_id' der verwendeten Tabellen erstellt um das Einfügen neuer Objekte zu ermöglichen.
 
 Hinzufügen der Topologie-Layer im QGis
 --------------------------------------
-
 Für die Topologie Funktion müssen 2 Postgis Layer ergänzt werden.
 In der Menüzeile über 'Layer > Layer hinzufügen > PostGis Layer' nach Auswahl der Datenbank und verbinden, die Layer 'edge_data' und 'node' hinzufügen. Anschließend muss noch der Layer 'edge_data' in 'edge' umbenannt werden.
+
+Hinzufügen der Topologie-Plugins im QGis
+----------------------------------------
+Aktuell sind die Topologie-Funktionen auf zwei Plugins verteilt:
+ - Topologic Geometry Add
+ - Topologic Geometry Edit
+
+Beide Plugins können über das Menü **Erweiterungen|Erweiterungen hinzufügen und installieren** nachdem die Sourcen im Plugin-Verzeichnis abgelegt wurden hinzugefügt werden.

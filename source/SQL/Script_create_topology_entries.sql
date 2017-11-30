@@ -26,8 +26,6 @@ UPDATE ga.g_hausanschluss t SET g = CreateTopoGeom('gas_topo',1,2,CAST('{{' || (
 SELECT AddTopoGeometryColumn('gas_topo', 'ga', 'g_abzweig', 'g', 'POINT');
 
 /* fill topology column of g_abzweig */
-/*UPDATE ga.g_abzweig t SET g = CreateTopoGeom('gas_topo',1,3,CAST('{{' || (SELECT node_id[3] FROM ga.sw_gis_point where rwo_id = t.rwo_id OFFSET 0 LIMIT 1) || ',1}}' AS integer[])) WHERE system_id IN (SELECT system_id FROM ga.g_abzweig t WHERE (SELECT node_id[3] FROM ga.sw_gis_point where rwo_id = t.rwo_id OFFSET 0 LIMIT 1) IS NOT NULL);*/
-/*UPDATE ga.g_abzweig t SET g = CreateTopoGeom('gas_topo',1,3,CAST(array (SELECT CAST ('{' || k.node_id[3] || ',1}' AS integer[]) FROM ga.sw_gis_point k,ga.g_abzweig t where k.rwo_id = t.rwo_id AND k.app_code = 15 LIMIT 1) AS integer[]));*/
 UPDATE ga.g_abzweig t SET g = CreateTopoGeom('gas_topo',1,3,CAST ('{{' || (SELECT k.node_id[3]) || ',1}}' AS integer[])) FROM ga.sw_gis_point k where k.rwo_id = t.rwo_id and k.app_code = 15;
 
 /* create topology column for g_versorgungsltg_abschnitt */
@@ -36,3 +34,24 @@ SELECT AddTopoGeometryColumn('gas_topo', 'ga', 'g_versorgungsltg_abschnitt', 'g'
 /* fill topology column of g_versorgungsltg_abschnitt */
 UPDATE ga.g_versorgungsltg_abschnitt t SET g = CreateTopoGeom('gas_topo',2, 4,CAST(array (SELECT CAST ('{' || k.link_id[3] || ',2}' AS integer[]) FROM ga.sw_gis_chain_link k, ga.sw_gis_chain h where k.chain_id = h.chain_id and h.rwo_id = t.rwo_id )AS integer[]));
 
+/* Create Sequence for system_id */
+CREATE SEQUENCE ga.system_id_seq
+  INCREMENT 1
+  MINVALUE 1
+  MAXVALUE 9223372036854775807
+  START 138
+  CACHE 1;
+ALTER TABLE ga.system_id_seq
+  OWNER TO postgres;
+  
+/* SET sequence to g_hausanschluss */
+ALTER TABLE IF EXISTS ga.g_hausanschluss ALTER COLUMN system_id SET DEFAULT nextval(('ga.system_id_seq'::text)::regclass);
+
+/* SET sequence to g_abzweig */
+ALTER TABLE IF EXISTS ga.g_abzweig ALTER COLUMN system_id SET DEFAULT nextval(('ga.system_id_seq'::text)::regclass);
+
+/* SET sequence to g_anschlussltg_abschnitt */
+ALTER TABLE IF EXISTS ga.g_anschlussltg_abschnitt ALTER COLUMN system_id SET DEFAULT nextval(('ga.system_id_seq'::text)::regclass);
+
+/* SET sequence to g_versorgungsltg_abschnitt */
+ALTER TABLE IF EXISTS ga.g_versorgungsltg_abschnitt ALTER COLUMN system_id SET DEFAULT nextval(('ga.system_id_seq'::text)::regclass);
