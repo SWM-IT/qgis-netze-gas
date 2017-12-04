@@ -43,13 +43,17 @@ BEGIN
 	SELECT e.edge_id, e.start_node, e.end_node
 	FROM ' || topology ||'.edge_data e, path s
 	WHERE (s.start_node = e.start_node OR s.start_node = e.end_node OR s.end_node = e.end_node OR s.end_node = e.start_node)
-	AND (SELECT * FROM topology.validateCombined(''' || topology || ''','''|| scheme ||''','''|| tablename ||''','''|| attribute ||''','''|| criterium ||''',e.start_node,1)) = false) 
-	SELECT * FROM path;';
-
+	AND (SELECT * FROM topology.validateCombined(''' || topology || ''','''|| scheme ||''','''|| tablename ||''','''|| attribute ||''','''|| criterium ||''',e.start_node,1)) = false
+	AND (SELECT * FROM topology.validateCombined(''' || topology || ''','''|| scheme ||''','''|| tablename ||''','''|| attribute ||''','''|| criterium ||''',e.end_node,1)) = false) 
+	SELECT DISTINCT e.edge_id, e.start_node, e.end_node
+	FROM path s, ' || topology ||'.edge_data e
+	WHERE e.edge_id = s.edge_id
+	OR e.start_node = s.end_node
+	OR e.end_node = s.start_node;';
+	
 	RETURN QUERY EXECUTE SQL;
 END
 $func$ LANGUAGE plpgsql;
-
 
 CREATE OR REPLACE FUNCTION topology.validateCombined(topology text,scheme text,tablename character varying,attribute character varying,criterium character varying,elementid int,typeid int)
 RETURNS boolean

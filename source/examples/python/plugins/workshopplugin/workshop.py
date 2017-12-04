@@ -128,10 +128,15 @@ class Workshop:
 		
 		#Start the simulation
 		if result:
+			layer = None
+			for aLayer in QgsMapLayerRegistry.instance().mapLayers().values():
+				if aLayer.name() == u'edge':
+					layer = aLayer
 			
-			layer = self.iface.mapCanvas().currentLayer()
-			if not (layer.name() == "edge") :
-				QMessageBox.information(None,"Simulation","Select the edge layer")
+			#layer = self.iface.mapCanvas().currentLayer()
+			#if not (layer.name() == "edge") :
+			if not layer:
+				QMessageBox.information(None,"Simulation","No edge layer found")
 				return
 		
 			#Get the information e
@@ -151,7 +156,7 @@ class Workshop:
 	   				result.append(record.value(0))			
 	   			print "Simulation end"
 	   			
-	   			layer = self.iface.mapCanvas().currentLayer()
+	   			#layer = self.iface.mapCanvas().currentLayer()
 	   			idx2 = layer.fieldNameIndex('edge_id')
 	   			
 	   			
