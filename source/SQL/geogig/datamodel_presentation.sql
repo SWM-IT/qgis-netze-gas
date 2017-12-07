@@ -253,7 +253,7 @@ SELECT
   bemerkung_zusatzbeschriftung,
   rwo_id,
   sw_exported_on   
-FROM ga.g_hauptltg_abschnitt LIMIT 99000;
+FROM ga.g_hauptltg_abschnitt WHERE d_leitung_in_betrieb && ST_MakeEnvelope(4471556,5330606,4492634,5344219,31468);
 
 -------------------------------------------------------------------------------------
 -- Copied Table: ga.g_versorgungsltg_abschnitt
@@ -480,7 +480,7 @@ SELECT
   uuid::text,
   rwo_id,
   sw_exported_on
-FROM ga.g_versorgungsltg_abschnitt LIMIT 99000;
+FROM ga.g_versorgungsltg_abschnitt WHERE d_leitung_in_betrieb && ST_MakeEnvelope(4471556,5330606,4492634,5344219,31468);
 
 -------------------------------------------------------------------------------------
 -- Copied Table: ga.g_hausanschluss
@@ -698,7 +698,7 @@ SELECT
   uuid::text,
   rwo_id,
   sw_exported_on
-FROM ga.g_hausanschluss LIMIT 99000;
+FROM ga.g_hausanschluss WHERE position_hausanschluss_in_betri && ST_MakeEnvelope(4471556,5330606,4492634,5344219,31468);
 
 -------------------------------------------------------------------------------------
 -- Copied Table: ga.g_abzweig
@@ -760,7 +760,7 @@ CREATE TABLE ga_test.g_abzweig
   -- beschriftung_ueberdeckung_in_be_ori numeric,
   -- beschriftung_hoehenwert_in_betr_style_info character varying(64),
   -- beschr_gswaechter2_just_y numeric,
-  d_position_in_betrieb_ori numeric,
+  d_position_in_betrieb_ori real,
   -- beschriftung_hoehenwert_in_betr_string text,
   -- beschr_gswaechter2_string text,
   -- beschr_gswaechter2_just_x numeric,
@@ -923,7 +923,7 @@ SELECT
   -- beschriftung_ueberdeckung_in_be_ori,
   -- beschriftung_hoehenwert_in_betr_style_info,
   -- beschr_gswaechter2_just_y,
-  d_position_in_betrieb_ori,
+  d_position_in_betrieb_ori::real,
   -- beschriftung_hoehenwert_in_betr_string,
   -- beschr_gswaechter2_string,
   -- beschr_gswaechter2_just_x,
@@ -944,7 +944,7 @@ SELECT
   uuid::text,
   rwo_id,
   sw_exported_on
-FROM ga.g_abzweig LIMIT 99000;
+FROM ga.g_abzweig WHERE d_position_in_betrieb && ST_MakeEnvelope(4471556,5330606,4492634,5344219,31468);
 
 -------------------------------------------------------------------------------------
 -- Copied Table: ga.g_anschlussltg_abschnitt
@@ -1166,6 +1166,6 @@ SELECT
   uuid::text,
   rwo_id,
   sw_exported_on
-FROM ga.g_anschlussltg_abschnitt LIMIT 99000;
+FROM ga.g_anschlussltg_abschnitt WHERE d_leitung_in_betrieb && ST_MakeEnvelope(4471556,5330606,4492634,5344219,31468);
 
 

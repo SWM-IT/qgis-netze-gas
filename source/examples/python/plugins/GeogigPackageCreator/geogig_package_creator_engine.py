@@ -21,6 +21,7 @@
 """
 
 import os
+import io
 import sys
 import zipfile
 
@@ -221,9 +222,9 @@ class GeogigPackageCreatorEngine(QObject):
         targetPath  = self._targetDatabaseFolder()
         
 
-        with open(sourceFile) as f:
+        with io.open(sourceFile, "r", encoding="utf-8") as f:
             lines = f.readlines()
-        f.close()
+        #f.close()
                 
         new_lines = []
         for line in lines:
@@ -233,7 +234,7 @@ class GeogigPackageCreatorEngine(QObject):
                 new_lines.append(line)
                             
         self.archiveFile.writestr(os.path.join(targetFolder, os.path.basename(sourceFile)),
-                                  "\n".join(new_lines),
+                                  "\n".join(new_lines).encode('utf-8'),
                                   compress_type = zipfile.ZIP_DEFLATED)
         
 
