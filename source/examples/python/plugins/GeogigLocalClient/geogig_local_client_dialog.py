@@ -617,7 +617,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         allLayers  = iface.legendInterface().layers()
         repoLayers = repo.trees()
         
-        layers = [layer for layer in allLayers if isRepoLayer(layer) and layer.name() in repoLayers]                
+        layers = [layer for layer in allLayers if isRepoLayer(layer) and self._layerName(layer) in repoLayers]                
         return layers
         
         
@@ -835,6 +835,13 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 changedLayers.append(layer)
                 
         return changedLayers 
+    
+    
+    def _layerName(self, layer):
+        if layer.shortName() != '':
+            return layer.shortName()
+        else:
+            return layer.name()
     
 #############################################################################################################
 #
