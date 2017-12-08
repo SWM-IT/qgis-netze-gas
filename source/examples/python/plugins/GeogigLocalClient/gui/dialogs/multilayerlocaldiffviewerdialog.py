@@ -48,7 +48,7 @@ class MultiLayerLocalDiffViewerDialog(LocalDiffViewerDialog):
         for layer in self.layers:
             self.changes.update(self.localChanges(layer))
             layerItem = QTreeWidgetItem()
-            layerItem.setText(0, layer.name())
+            layerItem.setText(0, layer.name().encode('utf-8'))
             layerItem.setIcon(0, layerIcon)
             self.featuresTree.addTopLevelItem(layerItem)
             addedItem = QTreeWidgetItem()
