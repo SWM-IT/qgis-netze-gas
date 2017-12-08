@@ -28,8 +28,10 @@ import zipfile
 from qgis.core import QgsProject
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 
-from geogig.tools.layertracking import (readTrackedLayers, tracked)
+from geogig.tools.layertracking import (readTrackedLayers)
 from geogig.tools.utils import (parentReposFolder)
+
+import geogig.tools.layertracking 
 
 class GeogigPackageCreatorEngine(QObject):
     
@@ -176,7 +178,9 @@ class GeogigPackageCreatorEngine(QObject):
         """I return a list of all full file names with managed geo package files"""
         readTrackedLayers()
 
-        return [layer.geopkg for layer in tracked]
+        # Note: It is important to call tracked as a qualified name and do not import the global:
+        # An import of the global in fact created a copy of it and I do not see the change by readTrackedLayers().
+        return [layer.geopkg for layer in geogig.tools.layertracking.tracked]
 
         
     def _geogigConfigFolder(self):
