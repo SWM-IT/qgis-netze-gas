@@ -220,17 +220,21 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def currentBranchChanged(self, currentBranchName):
         if not currentBranchName or currentBranchName == ""  or currentBranchName == self.MasterBranchName:
-            self.tbSync.setEnabled(False)
             self.tbPull.setEnabled(False)
             self.tbPush.setEnabled(False)
+        else:
+            self.tbPull.setEnabled(True)
+            self.tbPush.setEnabled(True)
+            
+        if not currentBranchName or currentBranchName == "":
+            self.tbSync.setEnabled(False)
             self.tbRevertLocalChanges.setEnabled(False)
             self.tbShowLocalChanges.setEnabled(False)
         else:
             self.tbSync.setEnabled(True)
-            self.tbPull.setEnabled(True)
-            self.tbPush.setEnabled(True)
             self.tbRevertLocalChanges.setEnabled(True)
-            self.tbShowLocalChanges.setEnabled(True)                      
+            self.tbShowLocalChanges.setEnabled(True)
+            
     
     def branchSelected(self):
         self.commitsList.clear()
@@ -629,7 +633,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         i = 0
         for layer in layers:
             displayBranchName = self.branchesHelper.displayName(branchName)
-            infoText = "Synchronising branch {0}, Layer: {1}".format(displayBranchName, layer.name().encode('utf-8'))
+            infoText = u"Synchronising branch {0}, Layer: {1}".format(displayBranchName, layer.name())
             self.progressMessageBar.setText(infoText)
             self.syncLayer(layer, branchName, commitMessage)
             i += 1
@@ -667,9 +671,9 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             
             if conflicts:
                 QMessageBox.warning(iface.mainWindow(), "Error while syncing", 
-                                    "There are conflicts between local and remote changes.\n"
+                                    u"There are conflicts between local and remote changes.\n"
                                     "Sync this layer separately via original GeoGig plugin.\n"
-                                    "Layername: " + layer.name().encode('utf-8'),
+                                    "Layername: " + layer.name(),
                         QMessageBox.Ok)
                 repo.closeTransaction(conflicts[0].transactionId)
                 return
@@ -710,7 +714,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             commitId = getCommitId(layer)
             headCommitId = repo.revparse(branchName)
             applyLayerChanges(repo, layer, commitId, headCommitId)
-         
+                     
         # Make changes visible in the map.   
         layer.reload()
         layer.triggerRepaint()
@@ -752,7 +756,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         i = 0
         for layer in layers:
-            self.progressMessageBar.setText("Moving to branch {0}. Layer: {1}".format(displayBranchName, layer.name().encode('utf-8')))
+            self.progressMessageBar.setText(u"Moving to branch {0}. Layer: {1}".format(displayBranchName, layer.name()))
             
             currentCommitId = getCommitId(layer)
             newCommitId     = repo.revparse(branchName)
@@ -786,7 +790,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.prepareProgressBar("Reverting local changes in branch {0}".format(displayBranchName), len(layers))
             
         for layer in layers:
-            self.progressMessageBar.setText("Reverting local changes {0}. Layer: {1}".format(displayBranchName, layer.name().encode('utf-8')))
+            self.progressMessageBar.setText(u"Reverting local changes {0}. Layer: {1}".format(displayBranchName, layer.name()))
             commitid = getCommitId(layer)
             tracking = getTrackingInfo(layer)
             # FIXME: checkoutlayer is very slow, because it fetches all data from the server.
