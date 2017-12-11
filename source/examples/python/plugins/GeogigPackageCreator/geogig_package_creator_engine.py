@@ -46,6 +46,7 @@ class GeogigPackageCreatorEngine(QObject):
     def __init__(self):
         QObject.__init__(self)
         self.archiveFile = None
+        self.doneMarkers = []
         
 
     def run(self, fileName, withDatabases=True, withProject=True, withConfiguration=True, withPlugins=True):
@@ -67,6 +68,7 @@ class GeogigPackageCreatorEngine(QObject):
         :type withPlugins: bool        
         """
         
+        self.doneMarkers = []
         self._prepareArchiveFile(fileName)
         
         
@@ -225,22 +227,57 @@ class GeogigPackageCreatorEngine(QObject):
         currentPath = self._databaseFolder().lower()
         targetPath  = self._targetDatabaseFolder()
         
-
-        with io.open(sourceFile, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        #f.close()
-                
         new_lines = []
-        for line in lines:
-            if currentPath in line.lower():
-                new_lines.append(line.lower().replace(currentPath, targetPath))
-            else:
-                new_lines.append(line)
-                            
+        with io.open(sourceFile, "r", encoding="utf-8") as f:
+            for line in f:
+                if currentPath in line.lower():
+                    new_lines.append(line.lower().replace(currentPath, targetPath))
+                elif '<prop k="name" v=' in line:
+                    new_lines.append(self.archiveStyleMarker(line, sourceFile))
+                else:
+                    new_lines.append(line)
+                                    
         self.archiveFile.writestr(os.path.join(targetFolder, os.path.basename(sourceFile)),
-                                  "\n".join(new_lines).encode('utf-8'),
+                                  "".join(new_lines).encode('utf-8'),
                                   compress_type = zipfile.ZIP_DEFLATED)
         
+        
+    def archiveStyleMarker(self, line, projectFile):
+        """I check, if the line contains a SVG file or similar things for the style.
+        
+        If so, I put the related SVG to the archive file and change the line accordingly.
+        I return either the original line or a changed one"""
+        
+        # I assume something like thi
+        # <prop k="name" v="../QGis/Gas-Demo/svg/sp_ga/g_hausanschluss.position_hausanschluss_in_betri.0.svg"/>
+        # So I try to gind the path to the SVG file between two defined marks 
+        
+        startMark = 'v="'
+        endMark   = '"/>'
+        
+        projectName = os.path.splitext(os.path.basename(projectFile))[0]
+        markerDir   = os.path.join(self.ARCHIVE_FOLDER_PROJECT, projectName, 'Markers')
+        
+        if (not startMark in line) or (not endMark in line): 
+            return line
+        
+        path = line[line.index(startMark) + len(startMark):line.index(endMark)]
+        
+        if not os.path.isabs(path):
+            fileName = os.path.join(os.path.dirname(projectFile), path)
+        else:
+            fileName = path
+        
+        
+        if not os.path.exists(fileName):
+            return line
+        
+        if not (fileName in self.doneMarkers):
+            self._doArchiveFile(fileName, markerDir)
+            self.doneMarkers.append(fileName)
+        
+        newFileName = os.path.join('.', projectName, 'Markers', os.path.basename(fileName))
+        return line.replace(path, newFileName) 
 
             
-    
+            
