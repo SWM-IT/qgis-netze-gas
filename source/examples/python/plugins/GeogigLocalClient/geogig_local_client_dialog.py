@@ -458,7 +458,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                        QMessageBox.No)
             if ret == QMessageBox.No:
                 return            
-
+        
         self.deleteBranchHierarchy(repo, branchName)
         self.fillBranchesList()
         repoWatcher.repoChanged.emit(repo)
@@ -466,10 +466,20 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def deleteBranchHierarchy(self, repo, branchName):
         """I delete the given branch and recursively all sub branches"""
+        currentBranch = self.getCurrentBranchName(repo)
         repo.deletebranch(branchName)
+        
+        # If I delete the current branch, I clear it from the branch tracking.
+        if currentBranch == branchName:
+            self.clearCurrentBranch(repo) 
         
         for subBranch in self.branchesHelper.childrenOfBranch(branchName):
             self.deleteBranchHierarchy(repo, subBranch)
+            
+            
+    def clearCurrentBranch(self, repo):
+        """I clear the current branch, i.e. after that, no branch is current for the given repo"""
+        self.branchtracking.clearBranchInfo(repo)
             
         
     def updateTags(self, commitid, tag=None):
