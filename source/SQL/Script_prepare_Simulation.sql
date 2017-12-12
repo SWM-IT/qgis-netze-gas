@@ -49,7 +49,9 @@ BEGIN
 	FROM path s, ' || topology ||'.edge_data e
 	WHERE e.edge_id = s.edge_id
 	OR e.start_node = s.end_node
-	OR e.end_node = s.start_node;';
+	OR e.end_node = s.start_node
+	OR e.start_node = s.start_node
+	OR e.end_node = s.end_node;';
 	
 	RETURN QUERY EXECUTE SQL;
 END
