@@ -116,4 +116,16 @@ class BranchesTracker(object):
         if currentRepo:
             return currentRepo.lastBranchPath
             
-    
+            
+    def clearBranchInfo(self, repo):
+        """I clear the current branch, i.e. after that, no branch is current for the given repo"""
+        if not repo:
+            return 
+        
+        for trackedRepo in self.trackedRepositories:
+            if trackedRepo.repoUrl == repo.url:
+                self.trackedRepositories.remove(trackedRepo)
+                self.saveTrackedBranches()
+                break
+            
+            

@@ -220,17 +220,21 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def currentBranchChanged(self, currentBranchName):
         if not currentBranchName or currentBranchName == ""  or currentBranchName == self.MasterBranchName:
-            self.tbSync.setEnabled(False)
             self.tbPull.setEnabled(False)
             self.tbPush.setEnabled(False)
+        else:
+            self.tbPull.setEnabled(True)
+            self.tbPush.setEnabled(True)
+            
+        if not currentBranchName or currentBranchName == "":
+            self.tbSync.setEnabled(False)
             self.tbRevertLocalChanges.setEnabled(False)
             self.tbShowLocalChanges.setEnabled(False)
         else:
             self.tbSync.setEnabled(True)
-            self.tbPull.setEnabled(True)
-            self.tbPush.setEnabled(True)
             self.tbRevertLocalChanges.setEnabled(True)
-            self.tbShowLocalChanges.setEnabled(True)                      
+            self.tbShowLocalChanges.setEnabled(True)
+            
     
     def branchSelected(self):
         self.commitsList.clear()
@@ -454,7 +458,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                                        QMessageBox.No)
             if ret == QMessageBox.No:
                 return            
-
+        
         self.deleteBranchHierarchy(repo, branchName)
         self.fillBranchesList()
         repoWatcher.repoChanged.emit(repo)
@@ -462,10 +466,20 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
     def deleteBranchHierarchy(self, repo, branchName):
         """I delete the given branch and recursively all sub branches"""
+        currentBranch = self.getCurrentBranchName(repo)
         repo.deletebranch(branchName)
+        
+        # If I delete the current branch, I clear it from the branch tracking.
+        if currentBranch == branchName:
+            self.clearCurrentBranch(repo) 
         
         for subBranch in self.branchesHelper.childrenOfBranch(branchName):
             self.deleteBranchHierarchy(repo, subBranch)
+            
+            
+    def clearCurrentBranch(self, repo):
+        """I clear the current branch, i.e. after that, no branch is current for the given repo"""
+        self.branchtracking.clearBranchInfo(repo)
             
         
     def updateTags(self, commitid, tag=None):
@@ -617,7 +631,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         allLayers  = iface.legendInterface().layers()
         repoLayers = repo.trees()
         
-        layers = [layer for layer in allLayers if isRepoLayer(layer) and layer.name() in repoLayers]                
+        layers = [layer for layer in allLayers if isRepoLayer(layer) and self._layerName(layer) in repoLayers]                
         return layers
         
         
@@ -629,7 +643,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         i = 0
         for layer in layers:
             displayBranchName = self.branchesHelper.displayName(branchName)
-            infoText = "Synchronising branch {0}, Layer: {1}".format(displayBranchName, layer.name())
+            infoText = u"Synchronising branch {0}, Layer: {1}".format(displayBranchName, layer.name())
             self.progressMessageBar.setText(infoText)
             self.syncLayer(layer, branchName, commitMessage)
             i += 1
@@ -667,7 +681,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             
             if conflicts:
                 QMessageBox.warning(iface.mainWindow(), "Error while syncing", 
-                                    "There are conflicts between local and remote changes.\n"
+                                    u"There are conflicts between local and remote changes.\n"
                                     "Sync this layer separately via original GeoGig plugin.\n"
                                     "Layername: " + layer.name(),
                         QMessageBox.Ok)
@@ -710,7 +724,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
             commitId = getCommitId(layer)
             headCommitId = repo.revparse(branchName)
             applyLayerChanges(repo, layer, commitId, headCommitId)
-         
+                     
         # Make changes visible in the map.   
         layer.reload()
         layer.triggerRepaint()
@@ -752,7 +766,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         
         i = 0
         for layer in layers:
-            self.progressMessageBar.setText("Moving to branch {0}. Layer: {1}".format(displayBranchName, layer.name()))
+            self.progressMessageBar.setText(u"Moving to branch {0}. Layer: {1}".format(displayBranchName, layer.name()))
             
             currentCommitId = getCommitId(layer)
             newCommitId     = repo.revparse(branchName)
@@ -786,7 +800,7 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
         self.prepareProgressBar("Reverting local changes in branch {0}".format(displayBranchName), len(layers))
             
         for layer in layers:
-            self.progressMessageBar.setText("Reverting local changes {0}. Layer: {1}".format(displayBranchName, layer.name()))
+            self.progressMessageBar.setText(u"Reverting local changes {0}. Layer: {1}".format(displayBranchName, layer.name()))
             commitid = getCommitId(layer)
             tracking = getTrackingInfo(layer)
             # FIXME: checkoutlayer is very slow, because it fetches all data from the server.
@@ -835,6 +849,14 @@ class GeogigLocalClientDialog(QtGui.QDockWidget, FORM_CLASS):
                 changedLayers.append(layer)
                 
         return changedLayers 
+    
+    
+    def _layerName(self, layer):
+        if layer.shortName() != '':
+            return layer.shortName()
+        else:
+            # Encoding is not needed here, as this layer has only its internal name.
+            return layer.name()
     
 #############################################################################################################
 #
