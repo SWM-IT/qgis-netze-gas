@@ -25,13 +25,24 @@ import io
 import sys
 import zipfile
 
+import json
+from json.decoder import JSONDecoder
+from json.encoder import JSONEncoder
+
 from qgis.core import QgsProject
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 
-from geogig.tools.layertracking import (readTrackedLayers)
+from geogig.tools.layertracking import (readTrackedLayers, TrackedLayer, Encoder)
 from geogig.tools.utils import (parentReposFolder)
 
 import geogig.tools.layertracking 
+
+def decoder(jsonobj):
+    if 'source' in jsonobj:
+        return TrackedLayer(jsonobj['source'],
+                           jsonobj['repoUrl'])
+    else:
+        return jsonobj
 
 class GeogigPackageCreatorEngine(QObject):
     
@@ -136,20 +147,21 @@ class GeogigPackageCreatorEngine(QObject):
         # Prepare trackedlayers file: Here I have typically user specific paths.
         # To avoid changing that on target machine, I change them to absolute,
         # static paths.
-        currentPath = self._databaseFolder().replace("\\", "\\\\").lower()
-        targetPath  = self._targetDatabaseFolder().replace("\\", "\\\\")
+        currentPath = self._databaseFolder().lower()
+        targetPath  = self._targetDatabaseFolder().lower()
         
         filename = os.path.join(configFolder, "trackedlayers")
         if os.path.exists(filename):
-            with open(filename) as f:
-                lines = f.readlines()
-                
-            new_lines = []
-            for line in lines:
-                new_lines.append(line.lower().replace(currentPath, targetPath))
-                
-            trackedString = "\n".join(new_lines)
             
+            trackInfos = self._readTrackedLayerFile(filename)
+            
+            for trackInfo in trackInfos:
+                trackInfo.geopkg = trackInfo.geopkg.lower().replace(currentPath, targetPath)
+                trackInfo.source = trackInfo.source.lower().replace(currentPath, targetPath)
+                
+                
+            trackedString= json.dumps(trackInfos, cls = Encoder)
+                        
             self.archiveFile.writestr(os.path.join(self.ARCHIVE_FOLDER_CONFIG, 'trackedlayers'),
                                       trackedString,
                                       compress_type = zipfile.ZIP_DEFLATED)
@@ -233,7 +245,7 @@ class GeogigPackageCreatorEngine(QObject):
                 if currentPath in line.lower():
                     new_lines.append(line.lower().replace(currentPath, targetPath))
                 elif '<prop k="name" v=' in line:
-                    new_lines.append(self.archiveStyleMarker(line, sourceFile))
+                    new_lines.append(self._archiveStyleMarker(line, sourceFile))
                 else:
                     new_lines.append(line)
                                     
@@ -242,15 +254,15 @@ class GeogigPackageCreatorEngine(QObject):
                                   compress_type = zipfile.ZIP_DEFLATED)
         
         
-    def archiveStyleMarker(self, line, projectFile):
+    def _archiveStyleMarker(self, line, projectFile):
         """I check, if the line contains a SVG file or similar things for the style.
         
         If so, I put the related SVG to the archive file and change the line accordingly.
         I return either the original line or a changed one"""
         
-        # I assume something like thi
+        # I assume something like this
         # <prop k="name" v="../QGis/Gas-Demo/svg/sp_ga/g_hausanschluss.position_hausanschluss_in_betri.0.svg"/>
-        # So I try to gind the path to the SVG file between two defined marks 
+        # So I try to find the path to the SVG file between two defined marks 
         
         startMark = 'v="'
         endMark   = '"/>'
@@ -280,4 +292,13 @@ class GeogigPackageCreatorEngine(QObject):
         return line.replace(path, newFileName) 
 
             
+    def _readTrackedLayerFile(self, filename):
+        with open(filename) as f:
+            lines = f.readlines()
             
+        trackInfo = JSONDecoder(object_hook = decoder).decode("\n".join(lines))
+            
+        return trackInfo
+    
+    
+         
