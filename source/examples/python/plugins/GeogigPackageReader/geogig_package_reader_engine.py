@@ -137,6 +137,9 @@ class GeogigPackageReaderEngine(QObject):
             # I import here, because it may be, the plugin has just been unzipped.
             from geogig.gui.dialogs.navigatordialog import navigatorInstance
             navigatorInstance.setVisible(False)
+            
+            from geogig.tools.layertracking import (readTrackedLayers)
+            readTrackedLayers()
                 
                 
     def _unzipFolder(self, sourcePath, targetFolder):
