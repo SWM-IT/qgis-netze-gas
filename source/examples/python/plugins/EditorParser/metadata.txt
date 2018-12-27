@@ -8,11 +8,11 @@
 
 [general]
 name=EditorParser
-qgisMinimumVersion=2.0
+qgisMinimumVersion=3.0
 description=EditorParser
 version=0.1
-author=Thomas Starke
-email=thomas.starke@mettenmeier.de
+author=Thomas Starke, Sebastian Schmidt
+email=thomas.starke@mettenmeier.de, Schmidt.sebastian2@swm.de
 
 about=EditorParser
 

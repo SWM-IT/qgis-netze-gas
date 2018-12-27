@@ -1,7 +1,8 @@
 Plugin: EditorParser
 
-Das Plugin in das Verzeichnis "C:\Users\BENUTZERNAME\.qgis2\python\plugins" ablegen. Im QGIS über 
-Erweiterungen => Erweiterungen verwalten und installieren das Plugin EditorParser suchen und installieren.
+Das Plugin in das Verzeichnis "C:\Users\<USERNAME>\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins" ablegen.
+Danach QGIS ggf. neu starten. Im QGIS über Erweiterungen => Erweiterungen verwalten
+und installieren das Plugin EditorParser suchen und installieren.
 
 Das Plugin ist danach unter Datenbank => EditorParser oder über das Icon in der Toolbar zu finden.    
 
