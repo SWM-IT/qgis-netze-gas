@@ -21,13 +21,13 @@ class DBConnection():
         # DB CONNECTION
         if not self.connection:
             if not host:
-                host = "localhost"
+                host = "nis_pool_test.intra.swm.de"
             if not dbname:
-                dbname = "nisconnect_integration"
+                dbname = "nisconnect_test"
             if not user:
-                user = "postgres"
+                user = "nis_readonly"
             if not password:
-                password = "postgres"
+                password = "yln0daer"
             try:
                 conn = psycopg2.connect(
                     "dbname='" + dbname + "' user='" + user + "' host='" + host + "' password='" + password + "'")
@@ -68,13 +68,10 @@ class DBConnection():
         connection = self.db_connection(None, None, None, None)
         if connection:
             cur = connection.cursor()
-
             cur.execute(
                 """SELECT value, sequence_number from ga.gced_enum WHERE name='""" + enum_name + """' ORDER BY sequence_number""")
             rows = cur.fetchall()
-
             self.db_connection_close()
-
             return rows
 
     def get_visibilities_from_db(self, table_name):

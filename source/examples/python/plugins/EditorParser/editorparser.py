@@ -23,7 +23,7 @@
 import xml.etree.ElementTree as ET
 
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QFileInfo
-from PyQt5.QtWidgets import QMessageBox, QAction
+from PyQt5.QtWidgets import QMessageBox, QAction, QFileDialog
 from PyQt5.QtGui import *
 from PyQt5.QtXml import *
 from PyQt5 import QtGui
@@ -81,7 +81,7 @@ class EditorParser:
 
         # set Buttens and dialogs
         self.dlg.FileDialogButtonn.clicked.connect(self.select_input_file)
-        self.dlg.ConvertProjectDataButton.clicked.connect(self.startConvert)
+        self.dlg.ConvertProjectDataButton.clicked.connect(self.start_convert)
         self.dlg.DirectConvertProjectDataButton.clicked.connect(self.start_direct_convert)
 
         # read smallworld page visibitiys from db               
@@ -113,11 +113,11 @@ class EditorParser:
         field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "", "system_id": ""}
         return field_names
 
-    def startConvert(self):
+    def start_convert(self):
         # clear statments dialog
         self.dlg.OperationStatments.clear()
         # read project data file
-        self.readProjectDataFile()
+        self.read_project_data_file()
         if self.dlg.lineEditProjectPath.text() == "":
             self.show_message("ACHTUNG", "Bitte erst eine Projektdatei auswählen")
         else:
@@ -126,7 +126,7 @@ class EditorParser:
             project_data_name = self.filename.split(".qgs")
             new_project_data_name = project_data_name[0] + "_NEU.qgs"
 
-            for layer in self.iface.legendInterface().layers():
+            for layer in self.read_layers():
 
                 # print ("NAME " + layer.name())
 
@@ -145,7 +145,7 @@ class EditorParser:
                     external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
 
                     # get stored visibilitys
-                    if self.editor_visibility_layers.has_key(layername):
+                    if layername in self.editor_visibility_layers:
                         editor_visibility = self.editor_visibility_layers[layername]
                         # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten 
                         self.convert_process_data(layer, editor_visibility, new_project_data_name)
@@ -165,9 +165,9 @@ class EditorParser:
         self.dlg.OperationStatments.clear()
         reply = QMessageBox.question(None, "ACHTUNG:", "Es wird die aktuelle Projekdatei angepasst!", QMessageBox.Yes,
                                      QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
+        if reply == QMessageBox.Yes:
             # get all my project layers
-            for layer in self.iface.legendInterface().layers():
+            for layer in self.read_layers():
                 if not layer.name().startswith(
                         'swb'):  # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
                     layer_element = layer.name().split(".")
@@ -175,7 +175,7 @@ class EditorParser:
                     external_layername = self.Connector.get_external_layername(layername)
                     if external_layername != "":
                         external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
-                        if self.editor_visibility_layers.has_key(layername):
+                        if layername in self.editor_visibility_layers:
                             editor_visibility = self.editor_visibility_layers[layername]
                             # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
                             self.direct_convert_process_data(layer, editor_visibility)
@@ -185,7 +185,7 @@ class EditorParser:
         else:
             self.show_message("Abbruch", "Abbruch durch Benutzer")
 
-    def readProjectDataFile(self):
+    def read_project_data_file(self):
         filename = self.dlg.lineEditProjectPath.text()
         if filename == "":
             self.show_message("ACHTUNG", "keine Projektdatei ausgewählt")
@@ -203,7 +203,7 @@ class EditorParser:
         project_layer_name = layer.name()
         # get all field names from layer
         layer_field_names = {}
-        for layer_field_name in layer.pendingFields():
+        for layer_field_name in layer.fields():
             # print(layer_field_name.name())
             layer_field_names[layer_field_name.name()] = layer_field_name
 
@@ -264,7 +264,7 @@ class EditorParser:
                         visibility_name = visibilty[0]
 
                         # schauen ob mein Feld aus in den Meta Daten der SMallworld DB steht
-                        if layer_field_names.has_key(visibility_name):
+                        if visibility_name in layer_field_names:
 
                             # get index from attribute field                                
                             internal_fieldname = visibilty[0]
@@ -280,7 +280,7 @@ class EditorParser:
                                                      "geaendert_von": ""}
 
                             # Datumsfelder setzen
-                            if field_type == "date" or not_changeable_fields.has_key(visibility_name):
+                            if field_type == "date" or visibility_name in not_changeable_fields:
 
                                 edittypes_tag = a_maplayer.find('edittypes')
 
@@ -300,7 +300,7 @@ class EditorParser:
                                             widgetv2config_tag.set('field_format', 'dd.MM.yyyy')
                                             widgetv2config_tag.set('allow_null', '1')  # erlaubt Leerwerte
 
-                                        if not_changeable_fields.has_key(visibility_name):
+                                        if visibility_name in not_changeable_fields:
                                             widgetv2config_tag.set('fieldEditable', '0')  # nicht änderbar
 
                             # Enumerator Felder und Werte setzen
@@ -340,7 +340,7 @@ class EditorParser:
                                             ET.SubElement(child_edittpe, "value", attrib=ValueAttributes)
 
                             # get fieldIndexNumber from QGIS field    
-                            idx = layer.fieldNameIndex(layer_field_names[visibility_name].name())
+                            idx = layer.dataProvider().fieldNameIndex(layer_field_names[visibility_name].name())
 
                             # MAKE TAB GENERATED FIELS 
                             FieldAttributes = {"index": str(idx), "name": internal_fieldname, "showLabel": "1"}
@@ -384,7 +384,7 @@ class EditorParser:
 
         # get all field names from layer
         layer_field_names = {}
-        for layer_field_name in layer.pendingFields():
+        for layer_field_name in layer.fields():
             layer_field_names[layer_field_name.name()] = layer_field_name
 
         layername = layer.name()
@@ -396,7 +396,7 @@ class EditorParser:
         doc = QDomDocument()
         map_layer = doc.createElement("maplayer")
         # write active layer xml 
-        layer.writeLayerXML(map_layer, doc)
+        layer.writeLayerXml(map_layer, doc, QgsReadWriteContext())
         layout = map_layer.firstChildElement("editorlayout")
 
         # set layername to QGIS
@@ -451,7 +451,7 @@ class EditorParser:
 
             visibility_name = visibilty[0]
 
-            if layer_field_names.has_key(visibility_name):
+            if visibility_name in layer_field_names:
 
                 # get index from attribute field                                
                 internal_fieldname = visibilty[0]
@@ -468,13 +468,13 @@ class EditorParser:
                 # print( visibility_values)
                 # print("AUSGABE " + visibility_values[ external_fieldname ] )
                 # get fieldIndexNumber from QGIS field    
-                idx = layer.fieldNameIndex(layer_field_names[visibility_name].name())
+                idx = layer.dataProvider().fieldNameIndex(layer_field_names[visibility_name].name())
 
                 # not changeable fields
                 not_changeable_fields = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "",
                                          "system_id": ""}
 
-                if field_type == "date" or not_changeable_fields.has_key(visibility_name):
+                if field_type == "date" or visibility_name in not_changeable_fields:
 
                     edittypes_tag = map_layer.firstChildElement("edittypes")
                     # get childs editytype from edittypes Tag
@@ -504,7 +504,7 @@ class EditorParser:
                                 newWidgetV2Config.setAttribute('allow_null', '1')  # erlaubt Leerwerte
 
                                 # if visibility_name =="geaendert_am" or visibility_name =="erfasst_am":
-                            if not_changeable_fields.has_key(visibility_name):
+                            if visibility_name in not_changeable_fields:
                                 newWidgetV2Config.setAttribute("fieldEditable",
                                                                "0")  # Feld nicht änderbar
 
@@ -593,8 +593,9 @@ class EditorParser:
 
                 store_page_name = page_name
 
-            ## set aliases Names for attributes     
-            map_layer = self.writeAliasesTags(idx, visibility_name, visibility_values, map_layer, doc)
+            ## set aliases Names for attributes
+            # TODO idx unassigned for layer G_Hochdruckleitung --> Debugging nötig.
+            map_layer = self.write_aliases_tags(idx, visibility_name, visibility_values, map_layer, doc)
 
             #### AUSAGBE MELDUNGSFENSTER
         operation.append("Layer " + layername + " wird bearbeitet:")
@@ -603,9 +604,9 @@ class EditorParser:
         #### AUSGABE 
 
         # write new DomElement to current active layer
-        layer.readLayerXML(map_layer)
+        layer.readLayerXml(map_layer,QgsReadWriteContext())
 
-    def writeAliasesTags(self, idx, visibility_name, visibility_values, map_layer, doc):
+    def write_aliases_tags(self, idx, visibility_name, visibility_values, map_layer, doc):
 
         aliases_tag = map_layer.firstChildElement("aliases")
 
@@ -624,7 +625,7 @@ class EditorParser:
                 FieldAttributes = {"field": field_value, "index": str(idx),
                                    "name": visibility_values["external_fieldname"]}
                 #  QDomDocument / actual node / parent tag / new Subelement Name / Attributes Subelement / remove actual node
-                self.createNewElementTag(doc, my_node, aliases_tag, "alias", FieldAttributes, "true")
+                self.create_new_element_tag(doc, my_node, aliases_tag, "alias", FieldAttributes, "true")
 
                 # alleinstehendes Attribut
                 # newAliasElement = doc.createElement("alias")
@@ -636,7 +637,7 @@ class EditorParser:
 
         return map_layer
 
-    def createNewElementTag(self, doc, my_node, parent_tag, subelement_name, attributes, remove):
+    def create_new_element_tag(self, doc, my_node, parent_tag, subelement_name, attributes, remove):
 
         if remove:
             # delete actual alias child and make a new one
@@ -675,8 +676,10 @@ class EditorParser:
 
     # open file dialog for project data
     def select_input_file(self):
-        ProjectPath = QgsProject.instance().readPath("./")
-        self.filename = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", ProjectPath, "*.qgs")
+        project_path = QgsProject.instance().readPath("./")
+        # TODO set to .qgs and .qgz --> qgz endet mit abbruch, da xml parser auf qgs gesetzt wird
+        #self.filename,_ = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", project_path, "*.qgz;;*.qgs")
+        self.filename,_ = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", project_path, "*.qgs")
         self.dlg.lineEditProjectPath.setText(self.filename)
 
     def get_smallworld_page_visibility(self):
