@@ -84,7 +84,7 @@ class EditorParser:
         self.dlg.ConvertProjectDataButton.clicked.connect(self.start_convert)
         self.dlg.DirectConvertProjectDataButton.clicked.connect(self.start_direct_convert)
 
-        # read smallworld page visibitiys from db               
+        # read smallworld page visibitiys from db
         self.editor_visibility_layers = self.get_smallworld_page_visibility()
 
         # Declare instance attributes
@@ -122,7 +122,7 @@ class EditorParser:
             self.show_message("ACHTUNG", "Bitte erst eine Projektdatei auswählen")
         else:
 
-            # new project Data Name and Path  
+            # new project Data Name and Path
             project_data_name = self.filename.split(".qgs")
             new_project_data_name = project_data_name[0] + "_NEU.qgs"
 
@@ -147,14 +147,14 @@ class EditorParser:
                     # get stored visibilitys
                     if layername in self.editor_visibility_layers:
                         editor_visibility = self.editor_visibility_layers[layername]
-                        # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten 
+                        # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
                         self.convert_process_data(layer, editor_visibility, new_project_data_name)
                     else:
                         print("Sichtbarkeit zu " + layername + " nicht gefunden.")
             reply = QMessageBox.question(self.iface.mainWindow(), 'ACHTUNG:', 'Es wird eine neue Projekdatei angelegt!',
                                          QMessageBox.Yes, QMessageBox.No)
 
-            if reply == QtGui.QMessageBox.Yes:
+            if reply == QMessageBox.Yes:
                 # self.writeProjectDataFile()
                 self.show_message("Speichern", "Projektdatei unter " + new_project_data_name + " erstellt")
             else:
@@ -222,7 +222,7 @@ class EditorParser:
                     operation.append("Layer " + layername + " wird bearbeitet:")
                     operation.append(".......OK")
                     self.dlg.OperationStatments.addItems(operation)
-                    #### AUSGABE    
+                    #### AUSGABE
                     external_layername = self.Connector.get_external_layername(layername)
                     if external_layername == "":
                         continue
@@ -233,7 +233,7 @@ class EditorParser:
                     editorLayout_tag.text = "tablayout"
 
                     # set shortname metadata for original layername
-                    # if shortname tag exists 
+                    # if shortname tag exists
                     shortName_tag = a_maplayer.find('shortname')
 
                     if shortName_tag != None:
@@ -266,7 +266,7 @@ class EditorParser:
                         # schauen ob mein Feld aus in den Meta Daten der SMallworld DB steht
                         if visibility_name in layer_field_names:
 
-                            # get index from attribute field                                
+                            # get index from attribute field
                             internal_fieldname = visibilty[0]
                             page_name = visibilty[1]
                             external_page_name = visibilty[2]
@@ -327,7 +327,7 @@ class EditorParser:
                                                                     "labelOnTop": "0", "constraintDescription": "",
                                                                     "notNull": "0"}
 
-                                        # wieder neu mit standartwerten einfügen                                        
+                                        # wieder neu mit standartwerten einfügen
                                         child_edittpe = ET.SubElement(edittype, "widgetv2config",
                                                                       Widgetv2ConfigAttributes)
 
@@ -339,10 +339,10 @@ class EditorParser:
                                             ValueAttributes = {"key": value, "value": value}
                                             ET.SubElement(child_edittpe, "value", attrib=ValueAttributes)
 
-                            # get fieldIndexNumber from QGIS field    
+                            # get fieldIndexNumber from QGIS field
                             idx = layer.dataProvider().fieldNameIndex(layer_field_names[visibility_name].name())
 
-                            # MAKE TAB GENERATED FIELS 
+                            # MAKE TAB GENERATED FIELS
                             FieldAttributes = {"index": str(idx), "name": internal_fieldname, "showLabel": "1"}
 
                             if page_name == "main_page":
@@ -365,7 +365,7 @@ class EditorParser:
                             store_page_name = page_name
                             # MAKE TAB GENERATED FIELS
 
-                            ## set aliases Names for attributs      
+                            ## set aliases Names for attributs
                             aliases_tag = a_maplayer.find('aliases')
 
                             # gehe über die aliase Attribute und ändere die Namen mit denen aus der DB
@@ -395,14 +395,14 @@ class EditorParser:
 
         doc = QDomDocument()
         map_layer = doc.createElement("maplayer")
-        # write active layer xml 
+        # write active layer xml
         layer.writeLayerXml(map_layer, doc, QgsReadWriteContext())
         layout = map_layer.firstChildElement("editorlayout")
 
         # set layername to QGIS
         layername_tag = map_layer.firstChildElement("layername")
         layername_tag.firstChild().setNodeValue(external_layer_name)
-        #####    
+        #####
 
         # remove old attributeEditorForm Element if exists
         if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
@@ -432,7 +432,7 @@ class EditorParser:
         #   shortname_tag = map_layer.firstChildElement("shortname")
         #  shortname_tag.setNodeValue(layername)
 
-        ####   
+        ####
 
         newAttributeEditorForm = doc.createElement("attributeEditorForm")
 
@@ -451,9 +451,10 @@ class EditorParser:
 
             visibility_name = visibilty[0]
 
+            idx = None
             if visibility_name in layer_field_names:
 
-                # get index from attribute field                                
+                # get index from attribute field
                 internal_fieldname = visibilty[0]
                 page_name = visibilty[1]
                 external_page_name = visibilty[2]
@@ -465,9 +466,9 @@ class EditorParser:
                 visibility_values = {"internal_fieldname": internal_fieldname, "page_name": page_name,
                                      "external_page_name": external_page_name, "external_fieldname": external_fieldname,
                                      "field_type": field_type, "enum_name": enum_name}
-                # print( visibility_values)
+                print( visibility_values)
                 # print("AUSGABE " + visibility_values[ external_fieldname ] )
-                # get fieldIndexNumber from QGIS field    
+                # get fieldIndexNumber from QGIS field
                 idx = layer.dataProvider().fieldNameIndex(layer_field_names[visibility_name].name())
 
                 # not changeable fields
@@ -487,7 +488,7 @@ class EditorParser:
 
                         if visibility_name == name_value:
 
-                            # delete child widgetv2config from edittype tag 
+                            # delete child widgetv2config from edittype tag
                             edittype_tag.removeChild(
                                 edittypes_nodes.at(i).toElement().firstChildElement("widgetv2config"))
 
@@ -495,7 +496,7 @@ class EditorParser:
                             newWidgetV2Config = doc.createElement("widgetv2config")
 
                             if field_type == "date":
-                                # set new value to attribute widgetv2type   
+                                # set new value to attribute widgetv2type
                                 edittype_tag.setAttribute("widgetv2type", "DateTime")
 
                                 newWidgetV2Config.setAttribute("calendar_popup", "1")
@@ -527,10 +528,10 @@ class EditorParser:
 
                         if visibility_name == name_value:
 
-                            # set new value to attribute widgetv2type   
+                            # set new value to attribute widgetv2type
                             edittype_tag.setAttribute("widgetv2type", "ValueMap")
 
-                            # delete child widgetv2config from edittype tag 
+                            # delete child widgetv2config from edittype tag
                             edittype_tag.removeChild(
                                 edittypes_nodes.at(i).toElement().firstChildElement("widgetv2config"))
 
@@ -541,7 +542,7 @@ class EditorParser:
                             newWidgetV2Config.setAttribute("labelOnTop", "0")
                             newWidgetV2Config.setAttribute("constraintDescription", "")
                             newWidgetV2Config.setAttribute("notNull", "0")
-                            # set enum name to identify for later 
+                            # set enum name to identify for later
                             newWidgetV2Config.setAttribute("enum_name", enum_name)
 
                             edittype_tag.appendChild(newWidgetV2Config)
@@ -554,7 +555,7 @@ class EditorParser:
                                 newValue = doc.createElement("value")
                                 newValue.setAttribute("key", value)
                                 newValue.setAttribute("value", value)
-                                # set enum name to identify for later 
+                                # set enum name to identify for later
                                 newValue.setAttribute("enum_name", enum_name)
 
                                 newWidgetV2Config.appendChild(newValue)
@@ -571,7 +572,7 @@ class EditorParser:
                     newAttributeEditorForm.appendChild(newEditorField)
                 else:
 
-                    # set new TabBox            
+                    # set new TabBox
                     if page_name != store_page_name:
                         # Tabbox
                         newEditorContainer = doc.createElement("attributeEditorContainer")
@@ -594,14 +595,14 @@ class EditorParser:
                 store_page_name = page_name
 
             ## set aliases Names for attributes
-            # TODO idx unassigned for layer G_Hochdruckleitung --> Debugging nötig.
-            map_layer = self.write_aliases_tags(idx, visibility_name, visibility_values, map_layer, doc)
+            if idx is not None:
+                map_layer = self.write_aliases_tags(idx, visibility_name, visibility_values, map_layer, doc)
 
             #### AUSAGBE MELDUNGSFENSTER
         operation.append("Layer " + layername + " wird bearbeitet:")
         operation.append(".......OK")
         self.dlg.OperationStatments.addItems(operation)
-        #### AUSGABE 
+        #### AUSGABE
 
         # write new DomElement to current active layer
         layer.readLayerXml(map_layer,QgsReadWriteContext())
@@ -652,7 +653,7 @@ class EditorParser:
         parent_tag.appendChild(newElement)
 
     def read_layers(self):
-        # read my project Layers from project  
+        # read my project Layers from project
         layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
         projectLayer = []
         for l in layers:
@@ -707,7 +708,7 @@ class EditorParser:
                 order_number = row[3]  # order number
                 external_fieldname = row[4]  # external fieldname
                 field_type = row[5]  # field type
-                enum_name = row[6]  # enumerator name see table gced_enum                 
+                enum_name = row[6]  # enumerator name see table gced_enum
 
                 editor_visibiltiy.append(
                     [internal_fieldname, page_name, external_page_name, order_number, external_fieldname, field_type,

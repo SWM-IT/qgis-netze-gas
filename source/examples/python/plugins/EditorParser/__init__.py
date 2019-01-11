@@ -31,5 +31,10 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
+    import sys
+    # TODO determine if we're in a Debug Environemnt and pull path from an  environment variable
+    sys.path.append('C:\Program Files\JetBrains\PyCharm 2018.3.3\debug-eggs\pycharm-debug.egg')
+    import pydevd
+    pydevd.settrace('localhost', port=42424, stdoutToServer=True, stderrToServer=True)
     from .editorparser import EditorParser
     return EditorParser(iface)
