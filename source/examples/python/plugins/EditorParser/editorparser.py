@@ -74,18 +74,15 @@ class EditorParser:
         # Create the dialog (after translation) and keep reference
         self.dlg = EditorParserDialog()
         # set reference to db connection class
-        self.Connector = DBConnection()
+        self.connector = DBConnection()
 
         self.dlg.lineEditProjectPath.clear()
         self.dlg.OperationStatments.clear()
 
-        # set Buttens and dialogs
+        # set Buttons and dialogs
         self.dlg.FileDialogButtonn.clicked.connect(self.select_input_file)
         self.dlg.ConvertProjectDataButton.clicked.connect(self.start_convert)
         self.dlg.DirectConvertProjectDataButton.clicked.connect(self.start_direct_convert)
-
-        # read smallworld page visibitiys from db
-        self.editor_visibility_layers = self.get_smallworld_page_visibility()
 
         # Declare instance attributes
         self.actions = []
@@ -114,7 +111,7 @@ class EditorParser:
         return field_names
 
     def start_convert(self):
-        # clear statments dialog
+        # clear statements dialog
         self.dlg.OperationStatments.clear()
         # read project data file
         self.read_project_data_file()
@@ -126,7 +123,10 @@ class EditorParser:
             project_data_name = self.filename.split(".qgs")
             new_project_data_name = project_data_name[0] + "_NEU.qgs"
 
-            for layer in self.read_layers():
+            layers = self.read_layers();
+            mapping_table = self.get_smallworld_page_visibilities(layers);
+
+            for layer in layers:
 
                 # print ("NAME " + layer.name())
 
@@ -136,7 +136,7 @@ class EditorParser:
                     layer_element = layer.name().split(".")
                     layername = layer_element[0]
 
-                    external_layername = self.Connector.get_external_layername(layername)
+                    external_layername = self.connector.get_external_layername(layername)
 
                     if external_layername == "":
                         continue
@@ -145,8 +145,8 @@ class EditorParser:
                     external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
 
                     # get stored visibilitys
-                    if layername in self.editor_visibility_layers:
-                        editor_visibility = self.editor_visibility_layers[layername]
+                    if layername in mapping_table:
+                        editor_visibility = mapping_table[layername]
                         # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
                         self.convert_process_data(layer, editor_visibility, new_project_data_name)
                     else:
@@ -161,22 +161,24 @@ class EditorParser:
                 print("Projekt wurde nicht gespeichert!")
 
     def start_direct_convert(self):
-        # clear statments dialog
+        # clear statements dialog
         self.dlg.OperationStatments.clear()
         reply = QMessageBox.question(None, "ACHTUNG:", "Es wird die aktuelle Projekdatei angepasst!", QMessageBox.Yes,
                                      QMessageBox.No)
         if reply == QMessageBox.Yes:
             # get all my project layers
+            layers = self.read_layers();
+            mapping_table = self.get_smallworld_page_visibilities(layers);
             for layer in self.read_layers():
                 if not layer.name().startswith(
                         'swb'):  # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
                     layer_element = layer.name().split(".")
                     layername = layer_element[0]
-                    external_layername = self.Connector.get_external_layername(layername)
+                    external_layername = self.connector.get_external_layername(layername)
                     if external_layername != "":
                         external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
-                        if layername in self.editor_visibility_layers:
-                            editor_visibility = self.editor_visibility_layers[layername]
+                        if layername in mapping_table:
+                            editor_visibility = mapping_table[layername]
                             # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
                             self.direct_convert_process_data(layer, editor_visibility)
                         else:
@@ -223,7 +225,7 @@ class EditorParser:
                     operation.append(".......OK")
                     self.dlg.OperationStatments.addItems(operation)
                     #### AUSGABE
-                    external_layername = self.Connector.get_external_layername(layername)
+                    external_layername = self.connector.get_external_layername(layername)
                     if external_layername == "":
                         continue
                         ## get continue with next value
@@ -259,21 +261,21 @@ class EditorParser:
                     parent = a_maplayer.find('attributeEditorForm')
 
                     store_page_name = "main_page"
-                    for visibilty in editor_visibility:
+                    for visibility in editor_visibility:
 
-                        visibility_name = visibilty[0]
+                        visibility_name = visibility[0]
 
                         # schauen ob mein Feld aus in den Meta Daten der SMallworld DB steht
                         if visibility_name in layer_field_names:
 
                             # get index from attribute field
-                            internal_fieldname = visibilty[0]
-                            page_name = visibilty[1]
-                            external_page_name = visibilty[2]
-                            order_number = visibilty[3]
-                            external_fieldname = visibilty[4]
-                            field_type = visibilty[5]
-                            enum_name = visibilty[6]
+                            internal_fieldname = visibility[0]
+                            page_name = visibility[1]
+                            external_page_name = visibility[2]
+                            order_number = visibility[3]
+                            external_fieldname = visibility[4]
+                            field_type = visibility[5]
+                            enum_name = visibility[6]
 
                             # not changeable fields
                             not_changeable_fields = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "",
@@ -306,7 +308,7 @@ class EditorParser:
                             # Enumerator Felder und Werte setzen
                             if enum_name != None:
 
-                                enum_values = self.Connector.get_enum_values(enum_name)
+                                enum_values = self.connector.get_enum_values(enum_name)
 
                                 edittypes_tag = a_maplayer.find('edittypes')
 
@@ -391,7 +393,7 @@ class EditorParser:
         layernames = layername.split(".")
         layername = layernames[0]
 
-        external_layer_name = self.Connector.get_external_layername(layername)
+        external_layer_name = self.connector.get_external_layername(layername)
 
         doc = QDomDocument()
         map_layer = doc.createElement("maplayer")
@@ -514,7 +516,7 @@ class EditorParser:
                             # Enumerator Felder und Werte setzen
                 if enum_name != None:
 
-                    enum_values = self.Connector.get_enum_values(enum_name)
+                    enum_values = self.connector.get_enum_values(enum_name)
 
                     edittypes_tag = map_layer.firstChildElement("edittypes")
                     # get childs editytype from edittypes Tag
@@ -683,22 +685,19 @@ class EditorParser:
         self.filename,_ = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", project_path, "*.qgs")
         self.dlg.lineEditProjectPath.setText(self.filename)
 
-    def get_smallworld_page_visibility(self):
+    def get_smallworld_page_visibilities(self, project_layers):
         #
         # get editor page visibility from table gced_editorpagefield
 
-        print("Load Smallworld PageVisibility")
-        projectLayers = self.read_layers()
-        # connection = self.Connector.db_connection(None, None, None, None)
-        # cur = connection.cursor()
+        print("Load Smallworld PageVisibility for a set of layers")
 
         editor_visibility_layers = {}
-        for layer in projectLayers:
+        for layer in project_layers:
 
             layer_element = layer.name().split(".")
             table_name = layer_element[0]
 
-            visibility_properties = self.Connector.get_visibilities_from_db(table_name)
+            visibility_properties = self.connector.get_visibilities_from_db(table_name)
 
             editor_visibiltiy = []
             for row in visibility_properties:
