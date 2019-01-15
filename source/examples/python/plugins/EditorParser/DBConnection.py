@@ -48,13 +48,13 @@ class DBConnection():
             self.connection.close()
             self.connection = None
 
-    def get_external_layername(self, layername):
+    def get_external_layername(self, layername, schema):
         connection = self.db_connection(None, None, None, None)
 
         if connection:
             cur = connection.cursor()
             # get external layer names from database
-            cur.execute("""SELECT external from ga.gced_type WHERE name='""" + layername + """'""")
+            cur.execute("""SELECT external from """+ schema +""".gced_type WHERE name='""" + layername + """'""")
             row = cur.fetchone()
             self.db_connection_close()
             if row is None:
@@ -64,22 +64,22 @@ class DBConnection():
             else:
                 return row[0]
 
-    def get_enum_values(self, enum_name):
+    def get_enum_values(self, enum_name, schema):
         connection = self.db_connection(None, None, None, None)
         if connection:
             cur = connection.cursor()
             cur.execute(
-                """SELECT value, sequence_number from ga.gced_enum WHERE name='""" + enum_name + """' ORDER BY sequence_number""")
+                """SELECT value, sequence_number from """ + schema + """.gced_enum WHERE name='""" + enum_name + """' ORDER BY sequence_number""")
             rows = cur.fetchall()
             self.db_connection_close()
             return rows
 
-    def get_visibilities_from_db(self, table_name):
+    def get_visibilities_from_db(self, table_name, schema):
         connection = self.db_connection(None, None, None, None)
         if connection:
             cur = connection.cursor()
             cur.execute(
-                """SELECT e.field_name, e.editorpage_name, e.external_page, e.order_number, f.external, f.field_type, f.enum_name from ga.gced_editorpagefield e, ga.gced_field f WHERE f.type_name = e.type_name AND f.name=e.field_name AND e.type_name='""" + table_name + """'  AND (e.editorpage_name='main_page' or e.editorpage_name LIKE 'sub_page%') GROUP BY e.field_name, f.external,e.editorpage_name, e.external_page, e.order_number, f.field_type, f.enum_name  ORDER BY e.editorpage_name, e.order_number""")
+                """SELECT e.field_name, e.editorpage_name, e.external_page, e.order_number, f.external, f.field_type, f.enum_name from """ + schema + """.gced_editorpagefield e, ga.gced_field f WHERE f.type_name = e.type_name AND f.name=e.field_name AND e.type_name='""" + table_name + """'  AND (e.editorpage_name='main_page' or e.editorpage_name LIKE 'sub_page%') GROUP BY e.field_name, f.external,e.editorpage_name, e.external_page, e.order_number, f.field_type, f.enum_name  ORDER BY e.editorpage_name, e.order_number""")
             rows = cur.fetchall()
             self.db_connection_close()
             return rows

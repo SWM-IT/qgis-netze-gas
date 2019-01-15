@@ -135,8 +135,9 @@ class EditorParser:
 
                     layer_element = layer.name().split(".")
                     layername = layer_element[0]
+                    schemaname = self.get_schema(layername)
 
-                    external_layername = self.connector.get_external_layername(layername)
+                    external_layername = self.connector.get_external_layername(layername, schemaname)
 
                     if external_layername == "":
                         continue
@@ -174,7 +175,8 @@ class EditorParser:
                         'swb'):  # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
                     layer_element = layer.name().split(".")
                     layername = layer_element[0]
-                    external_layername = self.connector.get_external_layername(layername)
+                    schemaname = self.get_schema(layername)
+                    external_layername = self.connector.get_external_layername(layername,schemaname)
                     if external_layername != "":
                         external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
                         if layername in mapping_table:
@@ -217,6 +219,7 @@ class EditorParser:
                 # split layernames behind point
                 layernames = layername_tag.text.split(".")
                 layername = layernames[0]
+                schemaname = self.get_schema(layername)
                 # print("LAYERNAME " + layername)
                 if not layername.startswith(
                         'swb'):  # and not layername.startswith('G') and not layername.startswith('edge') and not layername.startswith('node'):
@@ -225,7 +228,7 @@ class EditorParser:
                     operation.append(".......OK")
                     self.dlg.OperationStatments.addItems(operation)
                     #### AUSGABE
-                    external_layername = self.connector.get_external_layername(layername)
+                    external_layername = self.connector.get_external_layername(layername, schemaname)
                     if external_layername == "":
                         continue
                         ## get continue with next value
@@ -308,7 +311,7 @@ class EditorParser:
                             # Enumerator Felder und Werte setzen
                             if enum_name != None:
 
-                                enum_values = self.connector.get_enum_values(enum_name)
+                                enum_values = self.connector.get_enum_values(enum_name, schemaname)
 
                                 edittypes_tag = a_maplayer.find('edittypes')
 
@@ -392,8 +395,8 @@ class EditorParser:
         layername = layer.name()
         layernames = layername.split(".")
         layername = layernames[0]
-
-        external_layer_name = self.connector.get_external_layername(layername)
+        schemaname = self.get_schema(layername)
+        external_layer_name = self.connector.get_external_layername(layername, schemaname)
 
         doc = QDomDocument()
         map_layer = doc.createElement("maplayer")
@@ -516,7 +519,7 @@ class EditorParser:
                             # Enumerator Felder und Werte setzen
                 if enum_name != None:
 
-                    enum_values = self.connector.get_enum_values(enum_name)
+                    enum_values = self.connector.get_enum_values(enum_name,schemaname)
 
                     edittypes_tag = map_layer.firstChildElement("edittypes")
                     # get childs editytype from edittypes Tag
@@ -662,6 +665,9 @@ class EditorParser:
             projectLayer.append(l)
         return projectLayer
 
+    def get_schema(self, layername):
+        return "ga"
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -681,6 +687,7 @@ class EditorParser:
     def select_input_file(self):
         project_path = QgsProject.instance().readPath("./")
         # TODO set to .qgs and .qgz --> qgz endet mit abbruch, da xml parser auf qgs gesetzt wird
+        # see also QgsZipUtils.isZipFile() and QgsZipUtils.unzip()
         #self.filename,_ = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", project_path, "*.qgz;;*.qgs")
         self.filename,_ = QFileDialog.getOpenFileName(self.dlg, "Open File Dialog", project_path, "*.qgs")
         self.dlg.lineEditProjectPath.setText(self.filename)
@@ -696,8 +703,9 @@ class EditorParser:
 
             layer_element = layer.name().split(".")
             table_name = layer_element[0]
+            schemaname = self.get_schema(table_name)
 
-            visibility_properties = self.connector.get_visibilities_from_db(table_name)
+            visibility_properties = self.connector.get_visibilities_from_db(table_name, schemaname)
 
             editor_visibiltiy = []
             for row in visibility_properties:
