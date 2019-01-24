@@ -4,6 +4,8 @@ Created on 05.10.2017
 '''
 import psycopg2
 from PyQt5.QtWidgets import QMessageBox
+from .Visibililty import Visibility
+
 
 
 class DBConnection():
@@ -48,13 +50,13 @@ class DBConnection():
             self.connection.close()
             self.connection = None
 
-    def get_external_layername(self, layername, schema):
+    def get_external_layername(self, layer_name, schema):
         connection = self.db_connection(None, None, None, None)
 
         if connection:
             cur = connection.cursor()
             # get external layer names from database
-            cur.execute("""SELECT external from """+ schema +""".gced_type WHERE name='""" + layername + """'""")
+            cur.execute("""SELECT external from """ + schema +""".gced_type WHERE name='""" + layer_name + """'""")
             row = cur.fetchone()
             self.db_connection_close()
             if row is None:
@@ -79,7 +81,10 @@ class DBConnection():
         if connection:
             cur = connection.cursor()
             cur.execute(
-                """SELECT e.field_name, e.editorpage_name, e.external_page, e.order_number, f.external, f.field_type, f.enum_name from """ + schema + """.gced_editorpagefield e, ga.gced_field f WHERE f.type_name = e.type_name AND f.name=e.field_name AND e.type_name='""" + table_name + """'  AND (e.editorpage_name='main_page' or e.editorpage_name LIKE 'sub_page%') GROUP BY e.field_name, f.external,e.editorpage_name, e.external_page, e.order_number, f.field_type, f.enum_name  ORDER BY e.editorpage_name, e.order_number""")
+                """SELECT e.field_name, e.editorpage_name, e.external_page, e.order_number, f.external, f.field_type, f.enum_name from """ + schema + """.gced_editorpagefield e, """ + schema + """.gced_field f WHERE f.type_name = e.type_name AND f.name=e.field_name AND e.type_name='""" + table_name + """'  AND (e.editorpage_name='main_page' or e.editorpage_name LIKE 'sub_page%') GROUP BY e.field_name, f.external,e.editorpage_name, e.external_page, e.order_number, f.field_type, f.enum_name  ORDER BY e.editorpage_name, e.order_number""")
             rows = cur.fetchall()
             self.db_connection_close()
-            return rows
+            visibilities = []
+            for row in rows:
+                visibilities.append(Visibility(row[0],row[1], row[2], row[3], row[4], row[5], row[6]))
+            return visibilities
