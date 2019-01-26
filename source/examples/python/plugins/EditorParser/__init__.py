@@ -32,9 +32,16 @@ def classFactory(iface):  # pylint: disable=invalid-name
     """
     #
     import sys
-    # TODO determine if we're in a Debug Environemnt and pull path from an  environment variable
-    sys.path.append('C:\Program Files\JetBrains\PyCharm 2018.3.3\debug-eggs\pycharm-debug.egg')
-    import pydevd
-    pydevd.settrace('localhost', port=42424, stdoutToServer=True, stderrToServer=True)
+    import os
+
+    debug_flag = os.environ.get('PY_DEBUG_FLAG', '')
+    debug_egg = os.environ.get('PY_DEBUG_EGG', '')
+    debug_port = os.environ.get('PY_DEBUG_PORT', '')
+
+    if debug_flag:
+        sys.path.append(debug_egg)
+        import pydevd
+        #TODO use debug_port
+        pydevd.settrace('localhost', port=42424, stdoutToServer=True, stderrToServer=True)
     from .editorparser import EditorParser
     return EditorParser(iface)

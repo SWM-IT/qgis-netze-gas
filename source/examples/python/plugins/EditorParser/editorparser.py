@@ -31,6 +31,7 @@ from PyQt5 import QtGui
 from qgis.core import *
 from qgis.gui import *
 
+
 # Initialize Qt resources from file resources.py
 # import resources
 
@@ -38,7 +39,6 @@ from qgis.gui import *
 from .editorparser_dialog import EditorParserDialog
 # Import the DBConnection class
 from .DBConnection import DBConnection
-from .Visibililty import Visibility
 
 import os.path
 
@@ -59,7 +59,9 @@ class EditorParser:
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        # Todo why does this not work when debugging?
+        #locale = QSettings().value('locale/userLocale')[0:2]
+        locale = 'de'
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -109,6 +111,14 @@ class EditorParser:
         field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "", "system_id": ""}
         return field_names
 
+    def internal_layername(self, layer):
+        if layer.name().startswith('swb'): # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
+            return None, None
+        layer_element = layer.name().split(".")
+        layername = layer_element[0]
+        schemaname = self.get_schema(layername)
+        return schemaname, layername
+
     def start_direct_convert(self):
         # clear statements dialog
         self.dlg.OperationStatments.clear()
@@ -116,28 +126,34 @@ class EditorParser:
                                      QMessageBox.No)
         if reply == QMessageBox.Yes:
             # get all my project layers
-            layers = self.read_layers();
-            mapping_table = self.get_smallworld_page_visibilities(layers);
-            for layer in self.read_layers():
-                if not layer.name().startswith(
-                        'swb'):  # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
-                    layer_element = layer.name().split(".")
-                    layername = layer_element[0]
-                    schemaname = self.get_schema(layername)
+            layers = self.read_layers()
+            print(layers)
+            # add Relations between layers to project
+            relations = []
+            for layer in layers:
+                relations = self.create_relations(layer, relations)
+            if relations:
+                for rel in relations:
+                    QgsProject.instance().relationManager().addRelation(rel)
+            # Process external names layer by layer
+            mapping_table = self.get_smallworld_page_visibilities(layers)
+            for layer in layers:
+                schemaname, layername = self.internal_layername(layer)
+                if layername is not None:
                     external_layername = self.connector.get_external_layername(layername,schemaname)
                     if external_layername != "":
                         external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
                         if layername in mapping_table:
                             editor_visibility = mapping_table[layername]
                             # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
-                            self.direct_convert_process_data(layer, editor_visibility)
+                            self.direct_convert_process_layer(layer, external_name, editor_visibility)
                         else:
                             print("Sichtbarkeit zu " + layername + " nicht gefunden.")
             self.show_message("Info", "Konvertierung abgeschlossen.")
         else:
             self.show_message("Abbruch", "Abbruch durch Benutzer")
 
-    def direct_convert_process_data(self, layer, editor_visibility):
+    def direct_convert_process_layer(self, layer, external_name, editor_visibility):
 
         # operation Text
         operation = []
@@ -151,7 +167,6 @@ class EditorParser:
         layernames = layername.split(".")
         layername = layernames[0]
         schemaname = self.get_schema(layername)
-        external_layer_name = self.connector.get_external_layername(layername, schemaname)
 
         doc = QDomDocument()
         map_layer = doc.createElement("maplayer")
@@ -161,7 +176,7 @@ class EditorParser:
 
         # set layername to QGIS
         layername_tag = map_layer.firstChildElement("layername")
-        layername_tag.firstChild().setNodeValue(external_layer_name)
+        layername_tag.firstChild().setNodeValue(external_name)
         #####
 
         # remove old attributeEditorForm Element if exists
@@ -375,39 +390,49 @@ class EditorParser:
         layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
         return layers
 
+    def get_layer_with_prefix(self, tablename):
+        layers = self.read_layers()
+        for layer in layers:
+            if layer.name().startswith(tablename):
+                return layer
+        return None
+
+    def create_relations(self, layer, relations):
+        schemaname, layername = self.internal_layername(layer)
+        joins = self.connector.get_1toN_joins_from_db(layername, schemaname)
+        for join in joins:
+            foreign_layer = self.get_layer_with_prefix(join.foreign_table)
+            if foreign_layer:
+                relations.append(self.create_1toN_relation(layer, foreign_layer, join.own_field, join.foreign_field))
+        return relations
+
+    def create_1toN_relation(self, from_layer, to_layer, from_col, to_col):
+        rel = QgsRelation()
+        rel.setReferencingLayer(from_layer.id())
+        rel.setReferencedLayer(to_layer.id())
+        if (from_col in from_layer.dataProvider().fieldNameMap()) and (to_col in to_layer.dataProvider().fieldNameMap()):
+            rel.addFieldPair(from_col, to_col)
+        else:
+            print("create Relations: invalid column name " + from_col + " or " + to_col)
+            return None
+        rel.setId(from_layer.id() + "_to_" + to_layer.id())
+        rel.setName(from_layer.name() + " to " + to_layer.name())
+        return rel
+
     def get_schema(self, layername):
         return "ga"
-
-    # noinspection PyMethodMayBeStatic
-    def tr(self, message):
-        """Get the translation for a string using Qt translation API.
-
-        We implement this ourselves since we do not inherit QObject.
-
-        :param message: String for translation.
-        :type message: str, QString
-
-        :returns: Translated version of message.
-        :rtype: QString
-        """
-        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('EditorModifier', message)
 
     def get_smallworld_page_visibilities(self, project_layers):
         #
         # get editor page visibility from table gced_editorpagefield
-
         print("Load Smallworld PageVisibility for a set of layers")
 
         editor_visibility_layers = {}
         for layer in project_layers:
-
-            layer_element = layer.name().split(".")
-            table_name = layer_element[0]
-            schemaname = self.get_schema(table_name)
-            editor_visibility_layers[table_name] = self.connector.get_visibilities_from_db(table_name, schemaname)
-
+            schemaname, layername = self.internal_layername(layer)
+            editor_visibility_layers[layername] = self.connector.get_visibilities_from_db(layername, schemaname)
             # get back visibility in order from meta_data tables
+
         return editor_visibility_layers
 
     def show_message(self, title, text):

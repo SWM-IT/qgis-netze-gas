@@ -5,6 +5,7 @@ Created on 05.10.2017
 import psycopg2
 from PyQt5.QtWidgets import QMessageBox
 from .Visibililty import Visibility
+from .Join import Join
 
 
 
@@ -23,13 +24,13 @@ class DBConnection():
         # DB CONNECTION
         if not self.connection:
             if not host:
-                host = "nis_pool_test.intra.swm.de"
+                host = "localhost"
             if not dbname:
-                dbname = "nisconnect_test"
+                dbname = "nisconnect"
             if not user:
-                user = "nis_readonly"
+                user = "nisconnect"
             if not password:
-                password = "yln0daer"
+                password = "nis"
             try:
                 conn = psycopg2.connect(
                     "dbname='" + dbname + "' user='" + user + "' host='" + host + "' password='" + password + "'")
@@ -88,3 +89,20 @@ class DBConnection():
             for row in rows:
                 visibilities.append(Visibility(row[0],row[1], row[2], row[3], row[4], row[5], row[6]))
             return visibilities
+
+    def get_1toN_joins_from_db(self, table_name, schema):
+        connection = self.db_connection(None, None, None, None)
+        print("table: " + table_name)
+        print("schema: " + schema)
+        if connection:
+            cur = connection.cursor()
+            cur.execute(
+                "SELECT f.type_name as own_table, from_mapping_fields as own_field, result_name as foreign_table, to_mapping_fields as foreign_field, \"external\" as external_name FROM " + schema + ".gced_field f WHERE f.field_type = 'join' AND f.type_name= '" + table_name + "' and result_type = 'single'")
+            rows = cur.fetchall()
+            self.db_connection_close()
+            print("result from getJoins")
+            print(rows)
+            joins = []
+            for row in rows:
+                joins.append(Join(row[0],row[1],row[2],row[3],row[4]))
+            return joins
