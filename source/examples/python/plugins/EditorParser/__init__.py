@@ -36,12 +36,11 @@ def classFactory(iface):  # pylint: disable=invalid-name
 
     debug_flag = os.environ.get('PY_DEBUG_FLAG', '')
     debug_egg = os.environ.get('PY_DEBUG_EGG', '')
-    debug_port = os.environ.get('PY_DEBUG_PORT', '')
+    debug_port = int(os.environ.get('PY_DEBUG_PORT', ''))
 
     if debug_flag:
         sys.path.append(debug_egg)
         import pydevd
-        #TODO use debug_port
-        pydevd.settrace('localhost', port=42424, stdoutToServer=True, stderrToServer=True)
+        pydevd.settrace('localhost', port=debug_port, stdoutToServer=True, stderrToServer=True)
     from .editorparser import EditorParser
     return EditorParser(iface)

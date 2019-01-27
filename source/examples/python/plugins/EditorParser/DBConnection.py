@@ -6,6 +6,8 @@ import psycopg2
 from PyQt5.QtWidgets import QMessageBox
 from .Visibililty import Visibility
 from .Join import Join
+import os
+import configparser
 
 
 
@@ -19,18 +21,26 @@ class DBConnection():
         Connection
         '''
         self.connection = None
+        self.configFilePath = os.path.join(os.path.dirname(__file__), 'config.cfg')
+
+    def readConfiguration(self, filePath=None):
+        if filePath is None:
+            filePath = self.configFilePath
+        config = configparser.ConfigParser()
+        config.read(filePath)
+        section = 'Connection'
+        host = config.get(section, 'host', fallback='localhost')
+        port = config.getint(section,'port',fallback=5432)
+        dbname = config.get(section,'dbname',fallback='postgres')
+        user = config.get(section,'user',fallback='postgres')
+        password = config.get(section,'password',fallback='postgres')
+        return host,port,dbname,user,password
 
     def db_connection(self, host, dbname, user, password):
         # DB CONNECTION
         if not self.connection:
-            if not host:
-                host = "localhost"
-            if not dbname:
-                dbname = "nisconnect"
-            if not user:
-                user = "nisconnect"
-            if not password:
-                password = "nis"
+            host,port,dbname,user,password = self.readConfiguration()
+            #TODO use port from settings
             try:
                 conn = psycopg2.connect(
                     "dbname='" + dbname + "' user='" + user + "' host='" + host + "' password='" + password + "'")
