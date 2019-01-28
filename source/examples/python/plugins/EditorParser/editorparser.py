@@ -170,17 +170,24 @@ class EditorParser:
                 layer.setFieldAlias(self.get_fieldindex(layer,field), alias)
             # set Editor Type, default: hidden
             setup = QgsEditorWidgetSetup('Hidden', {})
-            if alias:
-                setup = QgsEditorWidgetSetup('RelationReference',
-                                             {
-                'AllowAddFeatures':'false',
-                'AllowNULL':'false',
-                'MapIdentification':'false',
-                'OrderByValue':'false',
-                'ReadOnly':'false',
-                'Relation': self.get_relation(layer, alias),
-                'ShowForm':'false',
-                'ShowOpenFormButton':'true'}
+            if join_alias:
+                relation_id = self.get_relation(layer, field)
+                # TODO: set Value displayed in the field,
+                # where to get from?
+                # yet unknown
+                # how to set Expression?
+                # See https://github.com/qgis/QGIS/blob/master/tests/src/python/test_qgsfieldformatters.py
+                # QgsRelationReferenceFieldFormatter
+                if relation_id:
+                    setup = QgsEditorWidgetSetup('RelationReference',
+                        {'AllowAddFeatures':'false',
+                        'AllowNULL':'false',
+                        'MapIdentification':'false',
+                        'OrderByValue':'false',
+                        'ReadOnly':'false',
+                        'Relation': relation_id,
+                        'ShowForm':'false',
+                        'ShowOpenFormButton':'true'}
                 )
             if vis:
                 if vis.field_type == "date":
@@ -197,9 +204,15 @@ class EditorParser:
                     setup = QgsEditorWidgetSetup('TextEdit', {'IsMultiline': 'False'})
             layer.setEditorWidgetSetup(self.get_fieldindex(layer,field), setup)
 
-    def get_relation(self, layer, alias):
-        # TODO determine correct relation id
-        return "g_anschlussltg_abschnitt_8fb0e60f_8ecb_4cfc_b58d_b15363116904_to_g_hausanschluss_position_hausanschluss_in_betri_ca803d21_f3c7_418f_81d8_02963cfe4c1e"
+    def get_relation(self, layer, field):
+        relations = QgsProject.instance().relationManager().referencingRelations(layer)
+        if relations:
+            for relation in relations:
+                fields_indices = relation.referencingFields()
+                for field_index in fields_indices:
+                    if self.get_fieldindex(layer,field) == field_index:
+                        return relation.id()
+        return None
 
     def get_fieldindex(self, layer, field):
         return layer.fields().indexFromName(field.name())
@@ -455,7 +468,9 @@ class EditorParser:
         else:
             print("create Relations: invalid column name " + from_col + " or " + to_col)
             return None
-        rel.setId(from_layer.id() + "_to_" + to_layer.id())
+        _, table1 = self.source_table_name(from_layer)
+        _, table2 = self.source_table_name(to_layer)
+        rel.setId(table1 + "_to_" + table2)
         rel.setName(from_layer.name() + " to " + to_layer.name())
         return rel
 
