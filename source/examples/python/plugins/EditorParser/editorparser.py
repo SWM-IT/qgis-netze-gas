@@ -111,13 +111,10 @@ class EditorParser:
         field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "", "system_id": ""}
         return field_names
 
-    def internal_layername(self, layer):
-        if layer.name().startswith('swb'): # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
-            return None, None
-        layer_element = layer.name().split(".")
-        layername = layer_element[0]
-        schemaname = self.get_schema(layername)
-        return schemaname, layername
+    def source_table_name(self, layer):
+        # TODO exclude some metadata tables
+        # if layer.name().startswith('swb'): # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
+        return layer.dataProvider().uri().schema(), layer.dataProvider().uri().table()
 
     def start_direct_convert(self):
         # clear statements dialog
@@ -130,28 +127,95 @@ class EditorParser:
             print(layers)
             # add Relations between layers to project
             relations = []
+            joins = []
             for layer in layers:
-                relations = self.create_relations(layer, relations)
+                schemaname, tablename = self.source_table_name(layer)
+                joins_for_layer = self.connector.get_1toN_joins_from_db(tablename, schemaname)
+                relations = self.create_relations(layer, joins_for_layer, relations)
+                joins.extend(joins_for_layer)
             if relations:
                 for rel in relations:
                     QgsProject.instance().relationManager().addRelation(rel)
             # Process external names layer by layer
             mapping_table = self.get_smallworld_page_visibilities(layers)
             for layer in layers:
-                schemaname, layername = self.internal_layername(layer)
-                if layername is not None:
-                    external_layername = self.connector.get_external_layername(layername,schemaname)
+                schemaname, tablename = self.source_table_name(layer)
+                if tablename is not None:
+                    external_layername = self.connector.get_external_layername(tablename,schemaname)
                     if external_layername != "":
                         external_name = external_layername.encode('utf-8', 'ignore').decode('utf-8')
-                        if layername in mapping_table:
-                            editor_visibility = mapping_table[layername]
+                        if tablename in mapping_table:
+                            editor_visibility = mapping_table[tablename]
                             # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
-                            self.direct_convert_process_layer(layer, external_name, editor_visibility)
+                            #self.direct_convert_process_layer(layer, external_name, editor_visibility)
+                            self.process_layer_v2(layer, tablename, external_name, editor_visibility, joins)
                         else:
-                            print("Sichtbarkeit zu " + layername + " nicht gefunden.")
+                            print("Sichtbarkeit zu " + tablename + " nicht gefunden.")
             self.show_message("Info", "Konvertierung abgeschlossen.")
         else:
             self.show_message("Abbruch", "Abbruch durch Benutzer")
+
+    def process_layer_v2(self, layer, tablename, external_name, editor_visibility, joins):
+        layer.setName(external_name)
+        # go through all columns of the layer
+        for field in layer.fields().toList():
+            alias = None
+            vis = self.get_vis_setting(editor_visibility, field.name())
+            if vis:
+                alias = vis.external_fieldname
+            join_alias = self.get_join_alias_setting(joins, tablename, field.name())
+            if join_alias:
+                alias = join_alias
+            if alias:
+                layer.setFieldAlias(self.get_fieldindex(layer,field), alias)
+            # set Editor Type, default: hidden
+            setup = QgsEditorWidgetSetup('Hidden', {})
+            if alias:
+                setup = QgsEditorWidgetSetup('RelationReference',
+                                             {
+                'AllowAddFeatures':'false',
+                'AllowNULL':'false',
+                'MapIdentification':'false',
+                'OrderByValue':'false',
+                'ReadOnly':'false',
+                'Relation': self.get_relation(layer, alias),
+                'ShowForm':'false',
+                'ShowOpenFormButton':'true'}
+                )
+            if vis:
+                if vis.field_type == "date":
+                    setup = QgsEditorWidgetSetup('DateTime', {'calendar_popup': '1',
+                                                          'display_format': 'dd.MM.yyyy',
+                                                          'field_format': 'dd.MM.yyyy',
+                                                          'allow_null': '1'})
+                elif vis.field_type == "enum":
+                    setup = QgsEditorWidgetSetup('ValueMap')
+                    # Todo set enum values.
+                elif vis.field_type == " boolean":
+                    setup = QgsEditorWidgetSetup('CheckBox')
+                else:
+                    setup = QgsEditorWidgetSetup('TextEdit', {'IsMultiline': 'False'})
+            layer.setEditorWidgetSetup(self.get_fieldindex(layer,field), setup)
+
+    def get_relation(self, layer, alias):
+        # TODO determine correct relation id
+        return "g_anschlussltg_abschnitt_8fb0e60f_8ecb_4cfc_b58d_b15363116904_to_g_hausanschluss_position_hausanschluss_in_betri_ca803d21_f3c7_418f_81d8_02963cfe4c1e"
+
+    def get_fieldindex(self, layer, field):
+        return layer.fields().indexFromName(field.name())
+
+    def get_vis_setting(self, editor_visibility, name):
+        for vis in editor_visibility:
+            if vis.internal_fieldname == name:
+                return vis
+        return None
+
+    def get_join_alias_setting(self, joins, tablename, name):
+        for join in joins:
+            if join.own_table == tablename:
+                if join.own_field == name:
+                    return join.external_name
+        return None
 
     def direct_convert_process_layer(self, layer, external_name, editor_visibility):
 
@@ -163,10 +227,7 @@ class EditorParser:
         for layer_field_name in layer.fields():
             layer_field_names[layer_field_name.name()] = layer_field_name
 
-        layername = layer.name()
-        layernames = layername.split(".")
-        layername = layernames[0]
-        schemaname = self.get_schema(layername)
+        schemaname, tablename = self.source_table_name(layer)
 
         doc = QDomDocument()
         map_layer = doc.createElement("maplayer")
@@ -186,28 +247,9 @@ class EditorParser:
         datasource = map_layer.firstChildElement("datasource")
         # shortname neu anlegen und positionieren
         newShortNameForm = doc.createElement("shortname")
-        newShortNameForm.setNodeValue(layername)
+        newShortNameForm.setNodeValue(tablename)
 
         map_layer.insertAfter(newShortNameForm, datasource)
-
-        # funktioniert noch nicht !!!
-        # set shortname metadata for original layername
-        # if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "keywordList":
-
-        # shortname neu anlegen und positionieren
-        # newShortNameForm = doc.createElement("shortname")
-
-        # datasource_tag = map_layer.firstChildElement("datasource")
-        # datasource_tag.setNodeValue(layername)
-
-        #  map_layer.insertAfter(newShortNameForm, datasource_tag)
-
-        # elif map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
-
-        #   shortname_tag = map_layer.firstChildElement("shortname")
-        #  shortname_tag.setNodeValue(layername)
-
-        ####
 
         newAttributeEditorForm = doc.createElement("attributeEditorForm")
 
@@ -346,7 +388,7 @@ class EditorParser:
                 map_layer = self.write_aliases_tags(idx, vis, map_layer, doc)
 
             #### AUSAGBE MELDUNGSFENSTER
-        operation.append("Layer " + layername + " wird bearbeitet:")
+        operation.append("Layer " + tablename + " wird bearbeitet:")
         operation.append(".......OK")
         self.dlg.OperationStatments.addItems(operation)
         #### AUSGABE
@@ -397,9 +439,7 @@ class EditorParser:
                 return layer
         return None
 
-    def create_relations(self, layer, relations):
-        schemaname, layername = self.internal_layername(layer)
-        joins = self.connector.get_1toN_joins_from_db(layername, schemaname)
+    def create_relations(self, layer, joins, relations):
         for join in joins:
             foreign_layer = self.get_layer_with_prefix(join.foreign_table)
             if foreign_layer:
@@ -419,9 +459,6 @@ class EditorParser:
         rel.setName(from_layer.name() + " to " + to_layer.name())
         return rel
 
-    def get_schema(self, layername):
-        return "ga"
-
     def get_smallworld_page_visibilities(self, project_layers):
         #
         # get editor page visibility from table gced_editorpagefield
@@ -429,8 +466,8 @@ class EditorParser:
 
         editor_visibility_layers = {}
         for layer in project_layers:
-            schemaname, layername = self.internal_layername(layer)
-            editor_visibility_layers[layername] = self.connector.get_visibilities_from_db(layername, schemaname)
+            schemaname, tablename = self.source_table_name(layer)
+            editor_visibility_layers[tablename] = self.connector.get_visibilities_from_db(tablename, schemaname)
             # get back visibility in order from meta_data tables
 
         return editor_visibility_layers
