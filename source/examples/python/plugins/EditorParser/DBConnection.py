@@ -39,11 +39,10 @@ class DBConnection():
     def db_connection(self, host, dbname, user, password):
         # DB CONNECTION
         if not self.connection:
-            host,port,dbname,user,password = self.readConfiguration()
-            #TODO use port from settings
+            host, port, dbname, user, password = self.readConfiguration()
             try:
                 conn = psycopg2.connect(
-                    "dbname='" + dbname + "' user='" + user + "' host='" + host + "' password='" + password + "'")
+                    "dbname='" + dbname + "' user='" + user + "' host='" + host + "' password='" + password + "' port="+str(port))
                 # print("DB connection ok")
                 self.connection = conn
                 return conn
@@ -102,16 +101,12 @@ class DBConnection():
 
     def get_1toN_joins_from_db(self, table_name, schema):
         connection = self.db_connection(None, None, None, None)
-        print("table: " + table_name)
-        print("schema: " + schema)
         if connection:
             cur = connection.cursor()
             cur.execute(
                 "SELECT f.type_name as own_table, from_mapping_fields as own_field, result_name as foreign_table, to_mapping_fields as foreign_field, \"external\" as external_name FROM " + schema + ".gced_field f WHERE f.field_type = 'join' AND f.type_name= '" + table_name + "' and result_type = 'single'")
             rows = cur.fetchall()
             self.db_connection_close()
-            print("result from getJoins")
-            print(rows)
             joins = []
             for row in rows:
                 joins.append(Join(row[0],row[1],row[2],row[3],row[4]))

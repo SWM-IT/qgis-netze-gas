@@ -7,8 +7,8 @@
                               -------------------
         begin                : 2017-09-14
         git sha              : $Format:%H$
-        copyright            : (C) 2017 by Thomas Starke
-        email                : thomas.starke@mettenmeier.de
+        copyright            : (C) 2017-2019 by Thomas Starke and Sebastian Schmidt
+        email                : thomas.starke@mettenmeier.de, schmidt.sebastian2@swm.de
  ***************************************************************************/
 
 /***************************************************************************
@@ -22,10 +22,9 @@
 """
 import xml.etree.ElementTree as ET
 
-from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QFileInfo
+from PyQt5.QtCore import QTranslator, qVersion, QCoreApplication, QFileInfo
 from PyQt5.QtWidgets import QMessageBox, QAction, QFileDialog
 from PyQt5.QtGui import *
-from PyQt5.QtXml import *
 from PyQt5 import QtGui
 
 from qgis.core import *
@@ -60,8 +59,7 @@ class EditorParser:
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
         # Todo why does this not work when debugging?
-        #locale = QSettings().value('locale/userLocale')[0:2]
-        locale = 'de'
+        locale = QtCore.QSettings().value("locale/userLocale")[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -124,7 +122,6 @@ class EditorParser:
         if reply == QMessageBox.Yes:
             # get all my project layers
             layers = self.read_layers()
-            print(layers)
             # add Relations between layers to project
             relations = []
             joins = []
@@ -148,16 +145,17 @@ class EditorParser:
                             editor_visibility = mapping_table[tablename]
                             # hole den richigen Maplayer vom derzeiten Layer und schreibe die Editor Sichtbarkeiten
                             #self.direct_convert_process_layer(layer, external_name, editor_visibility)
-                            self.process_layer_v2(layer, tablename, external_name, editor_visibility, joins)
+                            self.build_editor(layer, tablename, external_name, editor_visibility, joins)
                         else:
                             print("Sichtbarkeit zu " + tablename + " nicht gefunden.")
             self.show_message("Info", "Konvertierung abgeschlossen.")
         else:
             self.show_message("Abbruch", "Abbruch durch Benutzer")
 
-    def process_layer_v2(self, layer, tablename, external_name, editor_visibility, joins):
+    def build_editor(self, layer, tablename, external_name, editor_visibility, joins):
+        operation = []
         layer.setName(external_name)
-        # go through all columns of the layer
+        # go through all columns of the layer and set correct aliases
         for field in layer.fields().toList():
             alias = None
             vis = self.get_vis_setting(editor_visibility, field.name())
@@ -167,9 +165,8 @@ class EditorParser:
             if join_alias:
                 alias = join_alias
             if alias:
-                layer.setFieldAlias(self.get_fieldindex(layer,field), alias)
-            # set Editor Type, default: hidden
-            setup = QgsEditorWidgetSetup('Hidden', {})
+                layer.setFieldAlias(self.get_fieldindex(layer,field.name()), alias)
+            setup = None
             if join_alias:
                 relation_id = self.get_relation(layer, field)
                 # TODO: set Value displayed in the field,
@@ -195,14 +192,55 @@ class EditorParser:
                                                           'display_format': 'dd.MM.yyyy',
                                                           'field_format': 'dd.MM.yyyy',
                                                           'allow_null': '1'})
-                elif vis.field_type == "enum":
-                    setup = QgsEditorWidgetSetup('ValueMap')
-                    # Todo set enum values.
-                elif vis.field_type == " boolean":
-                    setup = QgsEditorWidgetSetup('CheckBox')
+                elif (vis.field_type == "string") and vis.enum_name is not None:
+                    schema, _ = self.source_table_name(layer)
+                    enums = self.connector.get_enum_values(vis.enum_name, schema)
+                    entries = []
+                    for enum in enums:
+                        entries.append({enum[0]:enum[0]})
+                    setup = QgsEditorWidgetSetup('ValueMap', {'map': entries})
+                elif vis.field_type == "boolean":
+                    setup = QgsEditorWidgetSetup('CheckBox', {})
                 else:
                     setup = QgsEditorWidgetSetup('TextEdit', {'IsMultiline': 'False'})
-            layer.setEditorWidgetSetup(self.get_fieldindex(layer,field), setup)
+            if setup:
+                layer.setEditorWidgetSetup(self.get_fieldindex(layer, field.name()), setup)
+
+        # Configure Field editors in correct order
+        form_config = layer.editFormConfig()
+        form_config.setLayout(QgsEditFormConfig.EditorLayout.TabLayout)
+        form_config.invisibleRootContainer().clear()
+        root_container = form_config.invisibleRootContainer()
+        current_container = form_config.invisibleRootContainer()
+        current_pagename = "main_page"
+        for vis in editor_visibility:
+            if vis.page_name != current_pagename:
+                new_container = self.create_tab_box(root_container, vis.external_page_name)
+                form_config.addTab(new_container)
+                current_container = new_container
+                current_pagename = vis.page_name
+            fieldname = vis.internal_fieldname
+            if vis.field_type == 'geometry':
+                continue
+            if vis.field_type == 'join':
+                join_target_field_name = self.get_join_target_field(joins, vis.external_fieldname)
+                if join_target_field_name:
+                    fieldname = join_target_field_name
+                else:
+                    continue
+            editor_field = QgsAttributeEditorField(fieldname, self.get_fieldindex(layer, fieldname), current_container)
+            current_container.addChildElement(editor_field)
+        layer.setEditFormConfig(form_config)
+
+        operation.append("Layer " + tablename + " wird bearbeitet:")
+        operation.append(".......OK")
+        self.dlg.OperationStatments.addItems(operation)
+
+    def create_tab_box(self, parent, name):
+        container = QgsAttributeEditorContainer(name, parent)
+        container.setIsGroupBox(False)
+        container.setColumnCount(1)
+        return container
 
     def get_relation(self, layer, field):
         relations = QgsProject.instance().relationManager().referencingRelations(layer)
@@ -210,12 +248,12 @@ class EditorParser:
             for relation in relations:
                 fields_indices = relation.referencingFields()
                 for field_index in fields_indices:
-                    if self.get_fieldindex(layer,field) == field_index:
+                    if self.get_fieldindex(layer,field.name()) == field_index:
                         return relation.id()
         return None
 
-    def get_fieldindex(self, layer, field):
-        return layer.fields().indexFromName(field.name())
+    def get_fieldindex(self, layer, name):
+        return layer.fields().indexFromName(name)
 
     def get_vis_setting(self, editor_visibility, name):
         for vis in editor_visibility:
@@ -230,215 +268,11 @@ class EditorParser:
                     return join.external_name
         return None
 
-    def direct_convert_process_layer(self, layer, external_name, editor_visibility):
-
-        # operation Text
-        operation = []
-
-        # get all field names from layer
-        layer_field_names = {}
-        for layer_field_name in layer.fields():
-            layer_field_names[layer_field_name.name()] = layer_field_name
-
-        schemaname, tablename = self.source_table_name(layer)
-
-        doc = QDomDocument()
-        map_layer = doc.createElement("maplayer")
-        # write active layer xml
-        layer.writeLayerXml(map_layer, doc, QgsReadWriteContext())
-        layout = map_layer.firstChildElement("editorlayout")
-
-        # set layername to QGIS
-        layername_tag = map_layer.firstChildElement("layername")
-        layername_tag.firstChild().setNodeValue(external_name)
-        #####
-
-        # remove old attributeEditorForm Element if exists
-        if map_layer.firstChildElement("datasource").nextSibling().nodeName() == "shortname":
-            map_layer.removeChild(map_layer.firstChildElement("shortname").nextSibling())
-
-        datasource = map_layer.firstChildElement("datasource")
-        # shortname neu anlegen und positionieren
-        newShortNameForm = doc.createElement("shortname")
-        newShortNameForm.setNodeValue(tablename)
-
-        map_layer.insertAfter(newShortNameForm, datasource)
-
-        newAttributeEditorForm = doc.createElement("attributeEditorForm")
-
-        # remove old attributeEditorForm Element if exists
-        if map_layer.firstChildElement("editorlayout").nextSibling().nodeName() == "attributeEditorForm":
-            map_layer.removeChild(map_layer.firstChildElement("editorlayout").nextSibling())
-
-        map_layer.insertAfter(newAttributeEditorForm, layout)
-        layout.firstChild().setNodeValue("tablayout")
-
-        store_page_name = "main_page"
-
-        for vis in editor_visibility:
-
-            operation = []
-            idx = None
-            if vis.internal_fieldname in layer_field_names:
-
-                visibility_values = {"internal_fieldname": vis.internal_fieldname, "page_name": vis.page_name,
-                                     "external_page_name": vis.external_page_name, "external_fieldname": vis.external_fieldname,
-                                     "field_type": vis.field_type, "enum_name": vis.enum_name}
-                print( visibility_values)
-                # get fieldIndexNumber from QGIS field
-                idx = layer.dataProvider().fieldNameIndex(layer_field_names[vis.internal_fieldname].name())
-
-                if vis.field_type == "date" or vis.internal_fieldname in self.not_changeable_fields():
-
-                    edittypes_tag = map_layer.firstChildElement("edittypes")
-                    # get childs editytype from edittypes Tag
-                    edittypes_nodes = edittypes_tag.childNodes()
-
-                    for i in range(0, edittypes_nodes.size()):
-                        # nodes.at(i).toElement().text() # Inhalt
-                        edittype_tag = edittypes_nodes.at(i).toElement()
-                        name_value = edittype_tag.attribute("name")  # get value from attr name
-
-                        if vis.internal_fieldname == name_value:
-
-                            # delete child widgetv2config from edittype tag
-                            edittype_tag.removeChild(
-                                edittypes_nodes.at(i).toElement().firstChildElement("widgetv2config"))
-
-                            # make a new children widgetv2config Tag for parent edittype
-                            newWidgetV2Config = doc.createElement("widgetv2config")
-
-                            if vis.field_type == "date":
-                                # set new value to attribute widgetv2type
-                                edittype_tag.setAttribute("widgetv2type", "DateTime")
-
-                                newWidgetV2Config.setAttribute("calendar_popup", "1")
-                                newWidgetV2Config.setAttribute("display_format", "dd.MM.yyyy")
-                                newWidgetV2Config.setAttribute("field_format", "dd.MM.yyyy")
-                                newWidgetV2Config.setAttribute('allow_null', '1')  # erlaubt Leerwerte
-                            if vis.internal_fieldname in self.not_changeable_fields():
-                                newWidgetV2Config.setAttribute("fieldEditable",
-                                                               "0")  # Feld nicht änderbar
-
-                            edittype_tag.appendChild(newWidgetV2Config)
-
-                # Enumerator Felder und Werte setzen
-                if vis.enum_name is not None:
-
-                    enum_values = self.connector.get_enum_values(vis.enum_name,schemaname)
-
-                    edittypes_tag = map_layer.firstChildElement("edittypes")
-                    # get childs editytype from edittypes Tag
-                    edittypes_nodes = edittypes_tag.childNodes()
-
-                    for i in range(0, edittypes_nodes.size()):
-
-                        # nodes.at(i).toElement().text() # Inhalt
-                        edittype_tag = edittypes_nodes.at(i).toElement()
-                        name_value = edittype_tag.attribute("name")  # get value from attr name
-
-                        if vis.internal_fieldname == name_value:
-
-                            # set new value to attribute widgetv2type
-                            edittype_tag.setAttribute("widgetv2type", "ValueMap")
-                            # delete child widgetv2config from edittype tag
-                            edittype_tag.removeChild(
-                                edittypes_nodes.at(i).toElement().firstChildElement("widgetv2config"))
-                            # make a new children widgetv2config Tag for parent edittype
-                            newWidgetV2Config = doc.createElement("widgetv2config")
-                            newWidgetV2Config.setAttribute("fieldEditable", "1")
-                            newWidgetV2Config.setAttribute("constraint", "")
-                            newWidgetV2Config.setAttribute("labelOnTop", "0")
-                            newWidgetV2Config.setAttribute("constraintDescription", "")
-                            newWidgetV2Config.setAttribute("notNull", "0")
-                            # set enum name to identify for later
-                            newWidgetV2Config.setAttribute("enum_name", vis.enum_name)
-
-                            edittype_tag.appendChild(newWidgetV2Config)
-
-                            # sets each enumerator value as new value tag
-                            for row in enum_values:
-                                value = row[0]
-                                sequence_number = row[1]
-                                newValue = doc.createElement("value")
-                                newValue.setAttribute("key", value)
-                                newValue.setAttribute("value", value)
-                                # set enum name to identify for later
-                                newValue.setAttribute("enum_name", vis.enum_name)
-                                newWidgetV2Config.appendChild(newValue)
-
-                ## Formulare generieren
-                if vis.page_name == "main_page":
-                    # alleinstehendes Attribut
-                    newEditorField = doc.createElement("attributeEditorField")
-                    newEditorField.setAttribute("showLabel", "1")
-                    newEditorField.setAttribute("index", str(idx))
-                    newEditorField.setAttribute("name", vis.internal_fieldname)
-                    newAttributeEditorForm.appendChild(newEditorField)
-                else:
-                    # set new TabBox
-                    if vis.page_name != store_page_name:
-                        # Tabbox
-                        newEditorContainer = doc.createElement("attributeEditorContainer")
-                        newEditorContainer.setAttribute("showLabel", "1")
-                        newEditorContainer.setAttribute("visibilityExpressionEnabled", "0")
-                        newEditorContainer.setAttribute("visibilityExpression", "")
-                        newEditorContainer.setAttribute("name", vis.external_page_name)
-                        newEditorContainer.setAttribute("groupBox", "0")
-                        newEditorContainer.setAttribute("columnCount", "1")
-                        newAttributeEditorForm.appendChild(newEditorContainer)
-                    newEditorField = doc.createElement("attributeEditorField")
-                    newEditorField.setAttribute("showLabel", "1")
-                    newEditorField.setAttribute("index", str(idx))
-                    newEditorField.setAttribute("name", vis.internal_fieldname)
-
-                    newEditorContainer.appendChild(newEditorField)
-
-                store_page_name = vis.page_name
-
-            ## set aliases Names for attributes
-            if idx is not None:
-                map_layer = self.write_aliases_tags(idx, vis, map_layer, doc)
-
-            #### AUSAGBE MELDUNGSFENSTER
-        operation.append("Layer " + tablename + " wird bearbeitet:")
-        operation.append(".......OK")
-        self.dlg.OperationStatments.addItems(operation)
-        #### AUSGABE
-
-        # write new DomElement to current active layer
-        layer.readLayerXml(map_layer,QgsReadWriteContext())
-
-    def write_aliases_tags(self, idx, visibility, map_layer, doc):
-
-        aliases_tag = map_layer.firstChildElement("aliases")
-
-        # get children from aliases Tag
-        nodes = aliases_tag.childNodes()
-
-        for i in range(0, nodes.size()):
-            # nodes.at(i).toElement().text() # Inhalt
-            alias = nodes.at(i).toElement()
-            field_value = alias.attribute("field")
-
-            if visibility.internal_fieldname == field_value:
-                my_node = nodes.at(i)
-
-                FieldAttributes = {"field": field_value, "index": str(idx),
-                                   "name": visibility.external_fieldname}
-                #  QDomDocument / actual node / parent tag / new Subelement Name / Attributes Subelement / remove actual node
-                self.create_new_element_tag(doc, my_node, aliases_tag, "alias", FieldAttributes, "true")
-        return map_layer
-
-    def create_new_element_tag(self, doc, my_node, parent_tag, subelement_name, attributes, remove):
-        if remove:
-            # delete actual alias child and make a new one
-            parent_tag.removeChild(my_node)
-            ## create new element
-        newElement = doc.createElement(subelement_name)
-        for key, val in attributes.items():
-            newElement.setAttribute(key, val)
-        parent_tag.appendChild(newElement)
+    def get_join_target_field(self, joins, external_name):
+        for join in joins:
+            if join.external_name == external_name:
+                return join.own_field
+        return None
 
     def read_layers(self):
         # read my project Layers from project
@@ -475,16 +309,10 @@ class EditorParser:
         return rel
 
     def get_smallworld_page_visibilities(self, project_layers):
-        #
-        # get editor page visibility from table gced_editorpagefield
-        print("Load Smallworld PageVisibility for a set of layers")
-
         editor_visibility_layers = {}
         for layer in project_layers:
             schemaname, tablename = self.source_table_name(layer)
             editor_visibility_layers[tablename] = self.connector.get_visibilities_from_db(tablename, schemaname)
-            # get back visibility in order from meta_data tables
-
         return editor_visibility_layers
 
     def show_message(self, title, text):
