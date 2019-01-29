@@ -155,6 +155,8 @@ class EditorParser:
     def build_editor(self, layer, tablename, external_name, editor_visibility, joins):
         operation = []
         layer.setName(external_name)
+        #TODO will this work in all cases?
+        layer.setDisplayExpression('system_id')
         # go through all columns of the layer and set correct aliases
         for field in layer.fields().toList():
             alias = None
@@ -169,7 +171,8 @@ class EditorParser:
             setup = None
             if join_alias:
                 relation_id = self.get_relation(layer, field)
-                # TODO: set Value displayed in the field,
+                # TODO set the value displayed here
+                # seems to be directly Coupbled with layer.setDisplayExpression() (potentially a bug)
                 # where to get from?
                 # yet unknown
                 # how to set Expression?
@@ -179,7 +182,7 @@ class EditorParser:
                     setup = QgsEditorWidgetSetup('RelationReference',
                         {'AllowAddFeatures':'false',
                         'AllowNULL':'false',
-                        'MapIdentification':'false',
+                        'MapIdentification':'true',
                         'OrderByValue':'false',
                         'ReadOnly':'false',
                         'Relation': relation_id,
