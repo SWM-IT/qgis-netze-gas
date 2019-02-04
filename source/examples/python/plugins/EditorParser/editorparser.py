@@ -21,6 +21,7 @@
  ***************************************************************************/
 """
 import xml.etree.ElementTree as ET
+from typing import Tuple, Iterable, Any, Dict
 
 from PyQt5.QtCore import QTranslator, qVersion, QCoreApplication, QFileInfo
 from PyQt5.QtWidgets import QMessageBox, QAction, QFileDialog
@@ -35,6 +36,7 @@ from qgis.gui import *
 # import resources
 
 # Import the code for the dialog
+from Join import Join
 from .editorparser_dialog import EditorParserDialog
 # Import the DBConnection class
 from .DBConnection import DBConnection
@@ -109,7 +111,7 @@ class EditorParser:
         field_names = {"geaendert_am": "", "erfasst_am": "", "erfasst_von": "", "geaendert_von": "", "system_id": ""}
         return field_names
 
-    def source_table_name(self, layer):
+    def source_table_name(self, layer: QgsVectorLayer) -> Tuple[str, str]:
         # TODO exclude some metadata tables
         # if layer.name().startswith('swb'): # and not layer.name().startswith('G') and not layer.name().startswith('node') and not layer.name().startswith('edge'):
         return layer.dataProvider().uri().schema(), layer.dataProvider().uri().table()
@@ -152,7 +154,7 @@ class EditorParser:
         else:
             self.show_message("Abbruch", "Abbruch durch Benutzer")
 
-    def build_editor(self, layer, tablename, external_name, editor_visibility, joins):
+    def build_editor(self, layer: QgsVectorLayer, tablename: str, external_name: str, editor_visibility, joins: Iterable[Join]):
         operation = []
         layer.setName(external_name)
         #TODO will this work in all cases?
@@ -239,13 +241,13 @@ class EditorParser:
         operation.append(".......OK")
         self.dlg.OperationStatments.addItems(operation)
 
-    def create_tab_box(self, parent, name):
+    def create_tab_box(self, parent, name:str) -> QgsAttributeEditorContainer:
         container = QgsAttributeEditorContainer(name, parent)
         container.setIsGroupBox(False)
         container.setColumnCount(1)
         return container
 
-    def get_relation(self, layer, field):
+    def get_relation(self, layer : QgsVectorLayer, field) -> QgsRelation:
         relations = QgsProject.instance().relationManager().referencingRelations(layer)
         if relations:
             for relation in relations:
@@ -255,48 +257,48 @@ class EditorParser:
                         return relation.id()
         return None
 
-    def get_fieldindex(self, layer, name):
+    def get_fieldindex(self, layer: QgsVectorLayer, name: str) -> int:
         return layer.fields().indexFromName(name)
 
-    def get_vis_setting(self, editor_visibility, name):
+    def get_vis_setting(self, editor_visibility, name: str):
         for vis in editor_visibility:
             if vis.internal_fieldname == name:
                 return vis
         return None
 
-    def get_join_alias_setting(self, joins, tablename, name):
+    def get_join_alias_setting(self, joins: Iterable[Join], tablename: str, name: str) -> str:
         for join in joins:
             if join.own_table == tablename:
                 if join.own_field == name:
                     return join.external_name
         return None
 
-    def get_join_target_field(self, joins, external_name):
+    def get_join_target_field(self, joins: Iterable[Join], external_name:str) -> str:
         for join in joins:
             if join.external_name == external_name:
                 return join.own_field
         return None
 
-    def read_layers(self):
+    def read_layers(self) -> Iterable[QgsVectorLayer]:
         # read my project Layers from project
         layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
         return layers
 
-    def get_layer_with_prefix(self, tablename):
+    def get_layer_with_prefix(self, tablename:str) -> QgsVectorLayer:
         layers = self.read_layers()
         for layer in layers:
             if layer.name().startswith(tablename):
                 return layer
         return None
 
-    def create_relations(self, layer, joins, relations):
+    def create_relations(self, layer: QgsVectorLayer, joins : Iterable[Join], relations):
         for join in joins:
             foreign_layer = self.get_layer_with_prefix(join.foreign_table)
             if foreign_layer:
                 relations.append(self.create_1toN_relation(layer, foreign_layer, join.own_field, join.foreign_field))
         return relations
 
-    def create_1toN_relation(self, from_layer, to_layer, from_col, to_col):
+    def create_1toN_relation(self, from_layer:str, to_layer:str, from_col:str, to_col:str) -> QgsRelation:
         rel = QgsRelation()
         rel.setReferencingLayer(from_layer.id())
         rel.setReferencedLayer(to_layer.id())
@@ -311,14 +313,14 @@ class EditorParser:
         rel.setName(from_layer.name() + " to " + to_layer.name())
         return rel
 
-    def get_smallworld_page_visibilities(self, project_layers):
+    def get_smallworld_page_visibilities(self, project_layers: Iterable[QgsVectorLayer]) -> Dict[str,Any]:
         editor_visibility_layers = {}
         for layer in project_layers:
             schemaname, tablename = self.source_table_name(layer)
             editor_visibility_layers[tablename] = self.connector.get_visibilities_from_db(tablename, schemaname)
         return editor_visibility_layers
 
-    def show_message(self, title, text):
+    def show_message(self, title: str, text: str):
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Warning)
         msg_box.setWindowTitle(title)
