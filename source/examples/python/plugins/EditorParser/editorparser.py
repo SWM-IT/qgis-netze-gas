@@ -36,7 +36,7 @@ from qgis.gui import *
 # import resources
 
 # Import the code for the dialog
-from Join import Join
+from .Join import Join
 from .editorparser_dialog import EditorParserDialog
 # Import the DBConnection class
 from .DBConnection import DBConnection
@@ -287,7 +287,8 @@ class EditorParser:
     def get_layer_with_prefix(self, tablename:str) -> QgsVectorLayer:
         layers = self.read_layers()
         for layer in layers:
-            if layer.name().startswith(tablename):
+            _, layers_tablename = self.source_table_name(layer)
+            if layers_tablename.startswith(tablename):
                 return layer
         return None
 
@@ -295,7 +296,9 @@ class EditorParser:
         for join in joins:
             foreign_layer = self.get_layer_with_prefix(join.foreign_table)
             if foreign_layer:
-                relations.append(self.create_1toN_relation(layer, foreign_layer, join.own_field, join.foreign_field))
+                relation = self.create_1toN_relation(layer, foreign_layer, join.own_field, join.foreign_field)
+                if relation is not None:
+                        relations.append(relation)
         return relations
 
     def create_1toN_relation(self, from_layer:str, to_layer:str, from_col:str, to_col:str) -> QgsRelation:
