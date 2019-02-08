@@ -172,7 +172,7 @@ class EditorParser:
                 layer.setFieldAlias(self.get_fieldindex(layer,field.name()), alias)
             setup = None
             if join_alias:
-                relation_id = self.get_relation(layer, field)
+                relation_id = self.get_relation_to_field(layer, field)
                 # TODO set the value displayed here
                 # seems to be directly Coupbled with layer.setDisplayExpression() (potentially a bug)
                 # where to get from?
@@ -227,14 +227,23 @@ class EditorParser:
             fieldname = vis.internal_fieldname
             if vis.field_type == 'geometry':
                 continue
-            if vis.field_type == 'join':
-                join_target_field_name = self.get_join_target_field(joins, vis.external_fieldname)
-                if join_target_field_name:
-                    fieldname = join_target_field_name
-                else:
-                    continue
             editor_field = QgsAttributeEditorField(fieldname, self.get_fieldindex(layer, fieldname), current_container)
-            current_container.addChildElement(editor_field)
+            if vis.field_type == 'join':
+                editor_field = None
+                join_target_fieldname = self.get_join_target_field(joins, vis.external_fieldname)
+                if join_target_fieldname:
+                    # editor to jump to parent object (jump from m-side to 1-side)
+                    editor_field = QgsAttributeEditorField(join_target_fieldname,
+                                                           self.get_fieldindex(layer, join_target_fieldname),
+                                                           current_container)
+                else:
+                    # editor to show child objects (jump from 1-side to m-side)
+                    # determine relation
+                    relation = self.get_relation_to_table(layer, vis.target_table_name)
+                    if relation:
+                        editor_field = QgsAttributeEditorRelation(relation, current_container)
+            if editor_field:
+                current_container.addChildElement(editor_field)
         layer.setEditFormConfig(form_config)
 
         operation.append("Layer " + tablename + " wird bearbeitet:")
@@ -247,7 +256,17 @@ class EditorParser:
         container.setColumnCount(1)
         return container
 
-    def get_relation(self, layer : QgsVectorLayer, field) -> QgsRelation:
+    def get_relation_to_table(self, layer: QgsVectorLayer, target_table_name: str) -> QgsRelation:
+        relations = QgsProject.instance().relationManager().referencedRelations(layer)
+        if relations:
+            for relation in relations:
+                layer = relation.referencingLayer()
+                _, tablename = self.source_table_name(layer)
+                if tablename == target_table_name:
+                    return relation
+        return None
+
+    def get_relation_to_field(self, layer : QgsVectorLayer, field: QgsField) -> QgsRelation:
         relations = QgsProject.instance().relationManager().referencingRelations(layer)
         if relations:
             for relation in relations:

@@ -91,12 +91,20 @@ class DBConnection():
         if connection:
             cur = connection.cursor()
             cur.execute(
-                """SELECT e.field_name, e.editorpage_name, e.external_page, e.order_number, f.external, f.field_type, f.enum_name from """ + schema + """.gced_editorpagefield e, """ + schema + """.gced_field f WHERE f.type_name = e.type_name AND f.name=e.field_name AND e.type_name='""" + table_name + """'  AND (e.editorpage_name='main_page' or e.editorpage_name LIKE 'sub_page%') GROUP BY e.field_name, f.external,e.editorpage_name, e.external_page, e.order_number, f.field_type, f.enum_name  ORDER BY e.editorpage_name, e.order_number""")
+                """SELECT e.field_name, e.editorpage_name, e.external_page, e.order_number, 
+                f.external, f.field_type, f.enum_name, f.result_name from """ + schema +
+                """.gced_editorpagefield e, """ + schema + """.gced_field f 
+                WHERE f.type_name = e.type_name AND f.name=e.field_name 
+                AND e.type_name='""" + table_name + """' 
+                AND (e.editorpage_name='main_page' or e.editorpage_name LIKE 'sub_page%') 
+                GROUP BY e.field_name, f.external, e.editorpage_name, e.external_page, e.order_number, 
+                f.field_type, f.enum_name, f.result_name 
+                ORDER BY e.editorpage_name, e.order_number""")
             rows = cur.fetchall()
             self.db_connection_close()
             visibilities = []
             for row in rows:
-                visibilities.append(Visibility(row[0],row[1], row[2], row[3], row[4], row[5], row[6]))
+                visibilities.append(Visibility(row[0],row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
             return visibilities
 
     def get_1toN_joins_from_db(self, table_name, schema):

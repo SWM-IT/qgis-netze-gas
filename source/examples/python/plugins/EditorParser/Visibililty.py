@@ -8,8 +8,9 @@ class Visibility():
         self.external_fieldname = None
         self.field_type = None
         self.enum_name = None
+        self.target_table_name = None
 
-    def __init__(self, internal_fieldname, page_name, external_page_name, order_number, external_fieldname, field_name, enum_name):
+    def __init__(self, internal_fieldname, page_name, external_page_name, order_number, external_fieldname, field_name, enum_name, target_table_name):
         self.internal_fieldname = internal_fieldname
         self.page_name = page_name
         self.external_page_name = external_page_name
@@ -17,3 +18,4 @@ class Visibility():
         self.external_fieldname = external_fieldname
         self.field_type = field_name
         self.enum_name = enum_name
+        self.target_table_name = target_table_name
